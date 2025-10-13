@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -27,7 +26,7 @@ const CategoryCard = ({ name, icon, onClick }) => (
 
 const JobCard = ({ job }) => {
   const isCompleted = job.status === "filled";
-  const isRepublished = !!job.clonedFrom;
+  const isRepublished = !!job.clonedFromId;
 
   return (
     <article className="bg-gray-800/50 rounded-2xl border border-white/10 p-6 hover:border-emerald-400/50 transition-all duration-300 flex flex-col">
@@ -72,11 +71,12 @@ const JobCard = ({ job }) => {
       </div>
 
       <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4">
-      <span className="text-sm text-gray-400">
-  {job.client?.company || 
-   (job.client?.firstName && `${job.client.firstName} ${job.client.lastName}`) || 
-   "Entreprise inconnue"}
-</span>
+        <span className="text-sm text-gray-400">
+          {job.client?.company ||
+            (job.client?.firstName &&
+              `${job.client.firstName} ${job.client.lastName}`) ||
+            "Entreprise inconnue"}
+        </span>
         <Link
           to={`/jobs/${job.id}`}
           className="text-sm px-4 py-2 rounded-lg bg-emerald-400 text-black font-semibold hover:bg-emerald-500"
@@ -414,15 +414,17 @@ const Home = () => {
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {loadingFreelancers
-              ? [1, 2, 3].map((n) => <CardSkeleton  key={`freelancer-skel-${n}`} />)
-              : topFreelancers.map((freelancer) => (
-              <FreelancerCard
-                key={freelancer.id}
-                user={freelancer}
-                onViewProfile={() => handleViewProfile(freelancer)}
-              />
-            ))}
+              {loadingFreelancers
+                ? [1, 2, 3].map((n) => (
+                    <CardSkeleton key={`freelancer-skel-${n}`} />
+                  ))
+                : topFreelancers.map((freelancer) => (
+                    <FreelancerCard
+                      key={freelancer.id}
+                      user={freelancer}
+                      onViewProfile={() => handleViewProfile(freelancer)}
+                    />
+                  ))}
             </div>
           </section>
 

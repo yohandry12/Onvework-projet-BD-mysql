@@ -73,7 +73,8 @@ const TalentCard = ({ talent, onViewProfile }) => {
       <div className="flex items-center gap-2 text-sm text-gray-600 mt-4">
         <BriefcaseIcon className="w-5 h-5 text-gray-400" />
         <p className="line-clamp-1">
-          {profile.skills?.join(" • ") || "Aucune compétence listée"}
+          {profile.skills?.slice(0, 2).join(" • ") ||
+            "Aucune compétence listée"}
         </p>
       </div>
 

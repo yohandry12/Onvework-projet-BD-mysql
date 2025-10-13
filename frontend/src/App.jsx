@@ -12,6 +12,7 @@ import { Toaster } from "react-hot-toast";
 // Contexts
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SocketProvider } from "./contexts/SocketContext";
+import { NetworkStatusProvider } from "./contexts/NetworkStatusContext";
 
 // --- PAGES ---
 import Home from "./pages/Home";
@@ -37,6 +38,7 @@ import Header from "./components/Layout/Header";
 import Footer from "./components/Layout/Footer";
 import LoadingSpinner from "./components/UI/LoadingSpinner";
 import AdminLayout from "./components/Layout/AdminLayout";
+import OfflineBanner from "./components/UI/OfflineBanner";
 
 // --- ProtectedRoute (Final) ---
 const ProtectedRoute = ({ allowedRoles }) => {
@@ -88,71 +90,77 @@ function AppRoutes() {
   }
 
   return (
-    <Routes>
-      {/* --- GROUPE 1: ROUTES PUBLIQUES & UTILISATEURS utilisant le MainLayout --- */}
-      <Route element={<MainLayout />}>
-        {/* Routes publiques */}
-        <Route path="/" element={<Home />} />
-        <Route path="/jobs" element={<Jobs />} />
-        <Route path="/jobs/:id" element={<JobDetail />} />
-        <Route path="/talents" element={<AllTalents />} />
+    <>
+      <OfflineBanner />
+      <Routes>
+        {/* --- GROUPE 1: ROUTES PUBLIQUES & UTILISATEURS utilisant le MainLayout --- */}
+        <Route element={<MainLayout />}>
+          {/* Routes publiques */}
+          <Route path="/" element={<Home />} />
+          <Route path="/jobs" element={<Jobs />} />
+          <Route path="/jobs/:id" element={<JobDetail />} />
+          <Route path="/talents" element={<AllTalents />} />
 
-        {/* Routes protégées pour Clients & Candidats */}
-        <Route
-          element={<ProtectedRoute allowedRoles={["client", "candidate"]} />}
-        >
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/manage-applications" element={<ManageApplications />} />
-          <Route path="/my-applications" element={<MyApplications />} />
+          {/* Routes protégées pour Clients & Candidats */}
           <Route
-            path="/onboarding/candidate"
-            element={<OnboardingCandidate />}
-          />
-          <Route path="/jobs/create" element={<CreateJob />} />
-          <Route path="/client/job-history" element={<JobHistory />} />
-          <Route path="/clients/:clientId" element={<ClientProfilePage />} />
+            element={<ProtectedRoute allowedRoles={["client", "candidate"]} />}
+          >
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route
+              path="/manage-applications"
+              element={<ManageApplications />}
+            />
+            <Route path="/my-applications" element={<MyApplications />} />
+            <Route
+              path="/onboarding/candidate"
+              element={<OnboardingCandidate />}
+            />
+            <Route path="/jobs/create" element={<CreateJob />} />
+            <Route path="/client/job-history" element={<JobHistory />} />
+            <Route path="/clients/:clientId" element={<ClientProfilePage />} />
+          </Route>
         </Route>
-      </Route>
 
-      {/* --- GROUPE 2: ROUTES D'AUTHENTIFICATION (sans layout) --- */}
-      <Route
-        path="/login"
-        element={user ? <Navigate to="/dashboard" /> : <Login />}
-      />
-      <Route
-        path="/register"
-        element={user ? <Navigate to="/dashboard" /> : <Register />}
-      />
-      <Route
-        path="/admin/login"
-        element={
-          user && user.role === "admin" ? (
-            <Navigate to="/admin/dashboard" />
-          ) : (
-            <AdminLogin />
-          )
-        }
-      />
+        {/* --- GROUPE 2: ROUTES D'AUTHENTIFICATION (sans layout) --- */}
+        <Route
+          path="/login"
+          element={user ? <Navigate to="/dashboard" /> : <Login />}
+        />
+        <Route
+          path="/register"
+          element={user ? <Navigate to="/dashboard" /> : <Register />}
+        />
+        <Route
+          path="/admin/login"
+          element={
+            user && user.role === "admin" ? (
+              <Navigate to="/admin/dashboard" />
+            ) : (
+              <AdminLogin />
+            )
+          }
+        />
 
-      {/* --- GROUPE 3: ROUTES ADMIN utilisant le AdminLayout --- */}
-      <Route
-        path="/admin"
-        element={<ProtectedRoute allowedRoles={["admin"]} />}
-      >
-        <Route element={<AdminLayout />}>
-          {/* Redirection de /admin vers /admin/dashboard */}
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="testimonials" element={<ManageTestimonials />} />
-          <Route path="reports" element={<ManageReports />} />
+        {/* --- GROUPE 3: ROUTES ADMIN utilisant le AdminLayout --- */}
+        <Route
+          path="/admin"
+          element={<ProtectedRoute allowedRoles={["admin"]} />}
+        >
+          <Route element={<AdminLayout />}>
+            {/* Redirection de /admin vers /admin/dashboard */}
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="testimonials" element={<ManageTestimonials />} />
+            <Route path="reports" element={<ManageReports />} />
+          </Route>
         </Route>
-      </Route>
 
-      {/* --- PAGES D'ERREUR --- */}
-      <Route path="/unauthorized" element={<h1>Accès Refusé</h1>} />
-      <Route path="*" element={<h1>404 - Page Non Trouvée</h1>} />
-    </Routes>
+        {/* --- PAGES D'ERREUR --- */}
+        <Route path="/unauthorized" element={<h1>Accès Refusé</h1>} />
+        <Route path="*" element={<h1>404 - Page Non Trouvée</h1>} />
+      </Routes>
+    </>
   );
 }
 
@@ -163,7 +171,9 @@ function App() {
       <Router>
         <AuthProvider>
           <SocketProvider>
-            <AppRoutes />
+            <NetworkStatusProvider>
+              <AppRoutes />
+            </NetworkStatusProvider>
             <Toaster position="top-right" />
           </SocketProvider>
         </AuthProvider>
