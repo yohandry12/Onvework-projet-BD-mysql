@@ -1,0 +1,796 @@
+const express = require("express");
+const {
+  Job,
+  User,
+  Application,
+  sequelize,
+  CandidateProfile,
+  ClientProfile,
+  Recommendation,
+} = require("../models");
+const { Op } = require("sequelize");
+const { authenticateToken, requireRole } = require("../middleware/auth");
+const { logger } = require("../utils/logger");
+const upload = require("../middleware/upload");
+
+module.exports = function (io) {
+  const router = express.Router();
+
+  // --- GET /api/jobs - Recherche, filtrage et pagination ---
+  router.get("/", async (req, res) => {
+    try {
+      const { search, category, experience, page = 1, limit = 10 } = req.query;
+      const pageNum = parseInt(page, 10);
+      const limitNum = parseInt(limit, 10);
+      const offset = (pageNum - 1) * limitNum;
+
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+      const whereClause = {
+        [Op.or]: [
+          { status: "published" },
+          { status: "filled", updatedAt: { [Op.gte]: oneMonthAgo } },
+        ],
+      };
+
+      if (category) whereClause.category = { [Op.in]: category.split(",") };
+      if (experience)
+        whereClause.experience = { [Op.in]: experience.split(",") };
+
+      if (search) {
+        whereClause[Op.or] = [
+          { title: { [Op.iLike]: `%${search}%` } },
+          { description: { [Op.iLike]: `%${search}%` } },
+        ];
+      }
+
+      const { count, rows } = await Job.findAndCountAll({
+        where: whereClause,
+        include: [
+          {
+            model: User,
+            as: "client",
+            attributes: ["id", "email"],
+            include: [
+              {
+                model: ClientProfile,
+                as: "clientProfile",
+                attributes: ["firstName", "lastName", "company"],
+              },
+            ],
+          },
+        ],
+        limit: limitNum,
+        offset: offset,
+        order: [["createdAt", "DESC"]],
+        distinct: true,
+      });
+
+      // Transformer le résultat pour simplifier la structure
+      const jobs = rows.map((job) => {
+        const plainJob = job.get({ plain: true });
+        if (plainJob.client && plainJob.client.clientProfile) {
+          plainJob.client = {
+            id: plainJob.client.id,
+            email: plainJob.client.email,
+            ...plainJob.client.clientProfile,
+          };
+        }
+        return plainJob;
+      });
+
+      res.json({
+        success: true,
+        jobs: jobs,
+        pagination: {
+          totalResults: count,
+          totalPages: Math.ceil(count / limitNum),
+          currentPage: pageNum,
+        },
+      });
+    } catch (error) {
+      logger.error("Erreur chargement jobs:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  // --- POST /api/jobs - Création d'une mission ---
+  router.post(
+    "/",
+    authenticateToken,
+    requireRole("client", "admin"),
+    async (req, res) => {
+      try {
+        const {
+          title,
+          description,
+          budget,
+          location,
+          skills,
+          experience,
+          education,
+          languages,
+          clonedFromId,
+          ...otherFields
+        } = req.body;
+        const clientUser = req.user;
+
+        if (!title || !description || !budget?.min || !budget?.max) {
+          return res
+            .status(400)
+            .json({ success: false, error: "Champs obligatoires manquants." });
+        }
+
+        // Récupérer le profil client pour avoir les infos complètes
+        const clientProfile = await ClientProfile.findOne({
+          where: { userId: clientUser.id },
+        });
+
+        const newJob = await Job.create({
+          title,
+          description,
+          budgetMin: budget.min,
+          budgetMax: budget.max,
+          budgetCurrency: budget.currency,
+          locationType: location.type,
+          locationCity: location.city,
+          locationCountry: location.country,
+
+          // On assigne les champs "aplatis"
+          skills,
+          experience,
+          education,
+          languages,
+
+          clientId: clientUser.id,
+          // --- CORRECTION CLÉ : On utilise les champs de l'utilisateur de base (`req.user`) ---
+          clientName: `${clientUser.firstName} ${clientUser.lastName}`,
+          clientCompany: clientProfile?.company || null, // 'company' est spécifique au profil
+          clonedFromId: clonedFromId || null,
+
+          ...otherFields,
+        });
+
+        logger.info("Mission créée", {
+          jobId: newJob.id,
+          clientId: clientUser.id,
+        });
+        io.emit("new-job-posted", newJob);
+        res.status(201).json({ success: true, job: newJob });
+      } catch (error) {
+        if (error instanceof sequelize.ValidationError) {
+          return res.status(400).json({
+            success: false,
+            error: error.errors.map((e) => e.message).join(", "),
+          });
+        }
+        logger.error("Erreur création mission:", error);
+        res.status(500).json({ success: false, error: "Erreur serveur" });
+      }
+    }
+  );
+
+  // --- GET /api/jobs/my-jobs - Récupérer les jobs postés par le client ---
+  router.get(
+    "/my-jobs",
+    authenticateToken,
+    requireRole("client", "admin"),
+    async (req, res) => {
+      try {
+        const clientId = req.user.id;
+        const { page = 1, limit = 10 } = req.query;
+
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
+        const offset = (pageNum - 1) * limitNum;
+
+        const { count, rows: clientJobs } = await Job.findAndCountAll({
+          where: { clientId: clientId },
+          order: [["createdAt", "DESC"]],
+          limit: limitNum,
+          offset: offset,
+          distinct: true,
+          include: [
+            {
+              model: Application,
+              as: "applications",
+              attributes: [
+                "id",
+                "status",
+                "coverLetter",
+                "attachments",
+                "createdAt",
+              ],
+              include: {
+                model: User,
+                as: "candidate",
+                attributes: ["id", "email", "role"],
+                include: {
+                  model: CandidateProfile,
+                  as: "candidateProfile",
+                  attributes: [
+                    "firstName",
+                    "lastName",
+                    "profession",
+                    "avatar",
+                    "bio",
+                    "skills",
+                  ],
+                },
+              },
+            },
+          ],
+        });
+
+        const totalPages = Math.ceil(count / limitNum);
+
+        // Transformer les données pour normaliser la structure
+        const formattedJobs = clientJobs.map((job) => {
+          const plainJob = job.get({ plain: true });
+          plainJob.applications = (plainJob.applications || []).map((app) => {
+            if (app.candidate && app.candidate.candidateProfile) {
+              app.candidate = {
+                id: app.candidate.id,
+                email: app.candidate.email,
+                role: app.candidate.role,
+                ...app.candidate.candidateProfile,
+              };
+            }
+            return app;
+          });
+          return plainJob;
+        });
+
+        res.json({
+          success: true,
+          jobs: formattedJobs,
+          pagination: {
+            currentPage: pageNum,
+            totalPages,
+            totalResults: count,
+          },
+        });
+      } catch (error) {
+        logger.error("Erreur récupération des missions du client:", error);
+        res.status(500).json({ success: false, error: "Erreur serveur" });
+      }
+    }
+  );
+
+  // --- GET /api/jobs/:jobId - Détail d'une mission ---
+  router.get("/:jobId", async (req, res) => {
+    try {
+      const { jobId } = req.params;
+      const job = await Job.findByPk(jobId, {
+        // La requête `include` est très bonne, on la garde.
+        include: [
+          {
+            model: Application,
+            as: "applications",
+            include: {
+              model: User,
+              as: "candidate",
+              attributes: ["id"], // On ne récupère que l'essentiel du User de base
+              include: {
+                model: CandidateProfile,
+                as: "candidateProfile", // On récupère TOUT le profil du candidat
+              },
+            },
+          },
+          {
+            model: User,
+            as: "client",
+            attributes: ["id"],
+            include: {
+              model: ClientProfile,
+              as: "clientProfile",
+            },
+          },
+        ],
+      });
+
+      if (!job) {
+        return res
+          .status(404)
+          .json({ success: false, error: "Mission introuvable" });
+      }
+
+      // --- CORRECTION CRUCIALE : Transformer la réponse pour le frontend ---
+      const plainJob = job.get({ plain: true });
+
+      // 1. On fusionne le profil du client
+      if (plainJob.client && plainJob.client.clientProfile) {
+        // On remplace l'objet 'client' par un objet plus simple
+        plainJob.client = {
+          id: plainJob.client.id,
+          // On copie toutes les propriétés du profil (company, firstName, etc.)
+          ...plainJob.client.clientProfile,
+        };
+      }
+
+      // 2. On fusionne le profil des candidats dans chaque application
+      if (plainJob.applications) {
+        plainJob.applications = plainJob.applications.map((app) => {
+          if (app.candidate && app.candidate.candidateProfile) {
+            app.candidate.profile = app.candidate.candidateProfile; // On crée la clé `profile` attendue
+            delete app.candidate.candidateProfile;
+          }
+          return app;
+        });
+      }
+
+      res.json({ success: true, job: plainJob });
+    } catch (error) {
+      logger.error("Erreur détail job:", error);
+      res.status(500).json({ success: false, error: "Erreur serveur" });
+    }
+  });
+
+  router.get(
+    "/:id/prepare-clone",
+    authenticateToken,
+    requireRole("client", "admin"),
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+        const originalJob = await Job.findByPk(id, {
+          // On ne récupère que les champs utiles, pas les associations lourdes
+          attributes: [
+            "title",
+            "description",
+            "category",
+            "type",
+            "budgetMin",
+            "budgetMax",
+            "budgetCurrency",
+            "locationType",
+            "locationCity",
+            "locationCountry",
+            "experience",
+            "education",
+            "skills",
+            "tags",
+            "languages",
+            "duration",
+            "isUrgent",
+            "clientId",
+          ],
+        });
+
+        if (!originalJob) {
+          return res
+            .status(404)
+            .json({ success: false, error: "Mission originale non trouvée." });
+        }
+
+        // Sécurité : Vérifier que le client est bien le propriétaire de la mission à cloner
+        if (originalJob.clientId !== req.user.id && req.user.role !== "admin") {
+          return res.status(403).json({
+            success: false,
+            error: "Vous n'êtes pas autorisé à cloner cette mission.",
+          });
+        }
+
+        // On construit un NOUVEL objet propre pour le formulaire
+        const clonedJobData = {
+          // On préfixe directement le titre ici
+          title: `Copie de : ${originalJob.title}`,
+          description: originalJob.description,
+          category: originalJob.category,
+          type: originalJob.type,
+          // Sequelize retourne des strings pour les décimaux, on les convertit si besoin
+          budget: {
+            min: parseFloat(originalJob.budgetMin) || "",
+            max: parseFloat(originalJob.budgetMax) || "",
+            currency: originalJob.budgetCurrency,
+          },
+          location: {
+            type: originalJob.locationType,
+            city: originalJob.locationCity,
+            country: originalJob.locationCountry,
+          },
+          experience: originalJob.experience,
+          education: originalJob.education,
+          skills: originalJob.skills || [],
+          tags: originalJob.tags || [],
+          languages: originalJob.languages || [],
+          duration: originalJob.duration,
+          isUrgent: originalJob.isUrgent,
+          // On garde l'ID de l'original pour la traçabilité
+          clonedFromId: id,
+        };
+
+        res.json({ success: true, job: clonedJobData });
+      } catch (error) {
+        logger.error("Erreur lors de la préparation du clonage:", error);
+        res.status(500).json({ success: false, error: "Erreur serveur." });
+      }
+    }
+  );
+
+  // --- POST /api/jobs/:jobId/apply - Candidature à une mission (VERSION DÉFINITIVE) ---
+  router.post(
+    "/:jobId/apply",
+    authenticateToken, // L'utilisateur doit être connecté
+    requireRole("candidate"), // Seul un 'candidate' peut postuler
+
+    // .any() accepte tous les champs (texte et fichiers) sans configuration complexe.
+    // Si cela échoue, le problème est 100% lié au système de fichiers (chemin/permissions).
+    upload.any(),
+
+    async (req, res) => {
+      // Démarrer une transaction Sequelize pour assurer l'atomicité
+      const t = await sequelize.transaction();
+
+      try {
+        console.log("[Route /apply] Traitement de la requête démarré.");
+        const { jobId } = req.params;
+        const { coverLetter } = req.body;
+        // TRADUCTION: req.user._id (Mongoose) devient req.user.id (Sequelize)
+        const candidateId = req.user.id;
+
+        // Étape 1 : Vérifier que la mission existe et qu'elle est ouverte
+        // TRADUCTION: Job.findById(jobId) devient Job.findByPk(jobId)
+        const job = await Job.findByPk(jobId, { transaction: t });
+        if (!job) {
+          await t.rollback(); // Annuler la transaction avant de répondre
+          return res
+            .status(404)
+            .json({ success: false, error: "Mission introuvable" });
+        }
+        if (job.status !== "published") {
+          await t.rollback();
+          return res.status(400).json({
+            success: false,
+            error: "Cette mission n'accepte plus de candidatures.",
+          });
+        }
+
+        // Étape 2 : Vérifier si le candidat a déjà postulé
+        // TRADUCTION: findOne({ job: jobId, candidate: candidateId }) devient findOne({ where: { ... } })
+        const existingApplication = await Application.findOne({
+          where: { jobId, candidateId },
+        });
+        if (existingApplication) {
+          await t.rollback();
+          return res.status(400).json({
+            success: false,
+            error: "Vous avez déjà postulé à cette offre.",
+          });
+        }
+
+        // Étape 3 : Traiter les pièces jointes (cette logique est identique)
+        // Avec upload.any(), les fichiers sont directement dans req.files (un tableau)
+        const attachments = (req.files || []).map((file) => ({
+          path: file.path,
+          filename: file.filename,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+        }));
+
+        await Application.create(
+          {
+            jobId,
+            candidateId,
+            clientId: job.clientId,
+            coverLetter,
+            attachments,
+          },
+          { transaction: t }
+        );
+
+        await job.increment("applicationCount", { by: 1, transaction: t });
+        await t.commit();
+
+        io.to(`user-${job.clientId}`).emit("new-application", {
+          jobId,
+          jobTitle: job.title,
+        });
+
+        console.log("[Route /apply] Candidature traitée avec succès.");
+        res.status(201).json({
+          success: true,
+          message: "Candidature envoyée avec succès !",
+        });
+      } catch (error) {
+        await t.rollback();
+        logger.error("Erreur lors de la candidature:", error);
+        res
+          .status(500)
+          .json({ success: false, error: "Une erreur interne est survenue." });
+      }
+    }
+  );
+
+  // --- GET /api/jobs/my-jobs/history - Récupère l'historique des missions terminées d'un client ---
+  router.get(
+    "/my-jobs/history",
+    authenticateToken,
+    requireRole("client"), // Seuls les clients peuvent accéder
+    async (req, res) => {
+      try {
+        const clientId = req.user.id; // L'ID vient de l'utilisateur authentifié
+        const { page = 1, limit = 10 } = req.query;
+
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
+        const offset = (pageNum - 1) * limitNum;
+
+        // Le filtre pour la requête Sequelize (équivalent de votre `filter` Mongoose)
+        const whereClause = {
+          clientId: clientId,
+          status: "filled", // On ne récupère que les missions terminées
+        };
+
+        // `findAndCountAll` est l'équivalent optimisé de `find()` + `countDocuments()`
+        const { count, rows: jobs } = await Job.findAndCountAll({
+          where: whereClause,
+          order: [["updatedAt", "DESC"]], // Tri par date de mise à jour (Sequelize)
+          limit: limitNum,
+          offset: offset,
+          // Équivalent de `.select()` : on ne choisit que les colonnes nécessaires
+          attributes: [
+            "id", // Toujours inclure l'id
+            "title",
+            "status",
+            "createdAt",
+            "updatedAt",
+            "applicationCount",
+            "budgetMin", // Budget est maintenant séparé en min/max/currency
+            "budgetMax",
+            "budgetCurrency",
+          ],
+        });
+
+        const totalPages = Math.ceil(count / limitNum);
+
+        res.json({
+          success: true, // Bonne pratique d'inclure un statut de succès
+          jobs,
+          pagination: {
+            currentPage: pageNum,
+            totalPages,
+            totalResults: count, // Renommé `totalJobs` en `totalResults` pour la cohérence
+          },
+        });
+      } catch (error) {
+        logger.error("Erreur récupération historique des missions:", error);
+        res.status(500).json({
+          success: false,
+          error: "Erreur lors de la récupération de votre historique",
+        });
+      }
+    }
+  );
+
+  // =============================================================
+  // --- PATCH /api/jobs/:id/status - Mise à jour du statut (Sequelize) ---
+  // =============================================================
+  router.patch(
+    "/:id/status",
+    authenticateToken,
+    requireRole("client", "admin"), // Seuls le client propriétaire et l'admin peuvent changer le statut
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+        let { status } = req.body; // `let` car la valeur peut être réassignée
+        const currentUser = req.user;
+
+        // 1. Normalisation du statut reçu du frontend (la logique est conservée)
+        const aliasMap = {
+          completed: "filled",
+          done: "filled",
+          finished: "filled",
+        };
+        if (aliasMap[status]) {
+          status = aliasMap[status];
+        }
+
+        // 2. Trouver la mission
+        const job = await Job.findByPk(id);
+        if (!job) {
+          return res
+            .status(404)
+            .json({ success: false, error: "Mission non trouvée." });
+        }
+
+        // 3. Vérification des permissions
+        if (job.clientId !== currentUser.id && currentUser.role !== "admin") {
+          return res
+            .status(403)
+            .json({ success: false, error: "Accès non autorisé." });
+        }
+
+        // 4. Mettre à jour le statut et sauvegarder
+        job.status = status;
+        const updatedJob = await job.save();
+
+        logger.info("Statut de la mission mis à jour", {
+          jobId: id,
+          newStatus: status,
+        });
+
+        res.json({ success: true, job: updatedJob });
+      } catch (error) {
+        logger.error("Erreur mise à jour statut mission:", error);
+        if (error.name === "SequelizeValidationError") {
+          return res.status(400).json({ success: false, error: error.message });
+        }
+        res.status(500).json({ success: false, error: "Erreur serveur." });
+      }
+    }
+  );
+
+  router.post(
+    "/:jobId/recommend",
+    authenticateToken,
+    requireRole("client", "admin"),
+    async (req, res) => {
+      const t = await sequelize.transaction();
+      try {
+        const { jobId } = req.params;
+        const { employeeId, message } = req.body;
+        const employerId = req.user.id;
+
+        // 1. & 2. Vérifier job et permissions
+        const job = await Job.findByPk(jobId, { transaction: t });
+        if (!job)
+          return res
+            .status(404)
+            .json({ success: false, error: "Mission introuvable." });
+        if (job.clientId !== employerId)
+          return res
+            .status(403)
+            .json({ success: false, error: "Action non autorisée." });
+
+        // 3. Vérifier que l'employé a été accepté
+        const application = await Application.findOne({
+          where: { jobId, candidateId: employeeId, status: "accepted" },
+          transaction: t,
+        });
+        if (!application)
+          return res.status(400).json({
+            success: false,
+            error: "Ce candidat n'a pas été accepté.",
+          });
+
+        // 4. Créer la nouvelle recommandation dans sa propre table
+        await Recommendation.create(
+          {
+            jobId: jobId,
+            employeeId: employeeId,
+            employerId: employerId,
+            message,
+          },
+          { transaction: t }
+        );
+
+        // 5. Mettre à jour le badge (le comptage est maintenant ultra-rapide)
+        const { count } = await Recommendation.findAndCountAll({
+          where: { employeeId: employeeId },
+          transaction: t,
+        });
+
+        let newBadge = "Bronze";
+        if (count >= 15) newBadge = "Or";
+        else if (count >= 5) newBadge = "Argent";
+
+        await CandidateProfile.update(
+          { recommendationBadge: newBadge },
+          { where: { userId: employeeId }, transaction: t }
+        );
+
+        // La notification reste la même
+        io.to(`user-${employeeId}`).emit("recommendation-received", {
+          newBadge,
+          employerName: job.clientName,
+        });
+
+        await t.commit();
+
+        res.status(201).json({
+          success: true,
+          message: "Recommandation enregistrée.",
+          badge: newBadge,
+        });
+      } catch (error) {
+        await t.rollback();
+        logger.error("Erreur recommandation:", error);
+        res.status(500).json({ success: false, error: "Erreur serveur." });
+      }
+    }
+  );
+
+  // router.get(
+  //   "/my-jobs/history",
+  //   authenticateToken,
+  //   requireRole("client", "admin"),  // Ajout de admin pour cohérence
+  //   async (req, res) => {
+  //     try {
+  //       const clientId = req.user.id;
+  //       const { page = 1, limit = 10 } = req.query;
+  //       const pageNumber = parseInt(page, 10);
+  //       const limitNumber = parseInt(limit, 10);
+  //       const offset = (pageNumber - 1) * limitNumber;
+
+  //       // Filtre pour récupérer uniquement les missions terminées
+  //       const whereClause = {
+  //         clientId: clientId,
+  //         status: "filled"  // Missions terminées uniquement
+  //       };
+
+  //       // Exécution en parallèle pour la performance
+  //       const [result, totalJobs] = await Promise.all([
+  //         Job.findAll({
+  //           where: whereClause,
+  //           order: [['updatedAt', 'DESC']], // Tri par date de fin
+  //           offset: offset,
+  //           limit: limitNumber,
+  //           attributes: [
+  //             'id',
+  //             'title',
+  //             'status',
+  //             'createdAt',
+  //             'updatedAt',
+  //             'applicationCount',
+  //             'budgetMin',
+  //             'budgetMax',
+  //             'budgetCurrency',
+  //             // Optionnel : ajouter d'autres champs utiles
+  //             'clientName',
+  //             'clientCompany'
+  //           ],
+  //           raw: true  // Retourne des objets JS simples
+  //         }),
+
+  //         Job.count({
+  //           where: whereClause
+  //         })
+  //       ]);
+
+  //       // Transformation pour correspondre à la structure Mongoose
+  //       const jobs = result.map(job => ({
+  //         id: job.id,  // Ou _id si vous voulez garder la convention Mongo
+  //         title: job.title,
+  //         status: job.status,
+  //         createdAt: job.createdAt,
+  //         updatedAt: job.updatedAt,
+  //         applicationCount: job.applicationCount,
+  //         budget: {
+  //           min: job.budgetMin,
+  //           max: job.budgetMax,
+  //           currency: job.budgetCurrency
+  //         },
+  //         // Données supplémentaires si nécessaire
+  //         client: {
+  //           name: job.clientName,
+  //           company: job.clientCompany
+  //         }
+  //       }));
+
+  //       const totalPages = Math.ceil(totalJobs / limitNumber);
+
+  //       res.json({
+  //         success: true,  // Ajout pour cohérence avec les autres routes
+  //         jobs,
+  //         pagination: {
+  //           currentPage: pageNumber,
+  //           totalPages,
+  //           totalJobs,
+  //         },
+  //       });
+
+  //     } catch (error) {
+  //       logger.error("Erreur récupération historique des missions:", error);
+  //       res.status(500).json({
+  //         success: false,
+  //         error: "Erreur lors de la récupération de votre historique",
+  //       });
+  //     }
+  //   }
+  // );
+
+  return router;
+};
