@@ -6,8 +6,8 @@ import {
   BriefcaseIcon,
   HomeIcon,
   ClockIcon,
-  RefreshIcon,
-} from "@heroicons/react/outline";
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 import AnimatedIcon from "../components/UI/AnimatedIcon";
 import FreelancerProfileModal from "../components/UI/FreelancerProfileModal";
 import TestimonialsSection from "../pages/TestimonialsSection";
@@ -42,7 +42,7 @@ const JobCard = ({ job }) => {
 
           {isRepublished && (
             <span className="flex items-center bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-1 rounded-full">
-              <RefreshIcon className="w-4 h-4 mr-1" />
+              <ArrowPathIcon className="w-4 h-4 mr-1" />
               Republiée
             </span>
           )}

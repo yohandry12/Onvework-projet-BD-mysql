@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { apiService } from "../services/api";
 import ApplicationForm from "./ApplicationForm"; // Assurez-vous que les chemins sont corrects
-import { RefreshIcon } from "@heroicons/react/outline";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import ReportModal from "../components/UI/ReportModal";
 
 const JobDetail = () => {
@@ -162,7 +162,7 @@ const JobDetail = () => {
                 {/* --- AJOUTER LES BADGES ICI --- */}
                 {isRepublished && (
                   <span className="flex items-center bg-purple-100 text-purple-800 text-sm font-medium px-3 py-1 rounded-full">
-                    <RefreshIcon className="w-4 h-4 mr-1" />
+                    <ArrowPathIcon className="w-4 h-4 mr-1" />
                     Republiée
                   </span>
                 )}

@@ -5,8 +5,8 @@ import {
   UsersIcon,
   StarIcon,
   FlagIcon,
-  LogoutIcon,
-} from "@heroicons/react/outline";
+  ArrowRightOnRectangleIcon as LogoutIcon,
+} from "@heroicons/react/24/outline";
 
 const AdminDropdownMenu = ({ user, logout }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,9 +22,11 @@ const AdminDropdownMenu = ({ user, logout }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const firstName = user.profile?.firstName ?? 'Admin';
-  const lastName = user.profile?.lastName ?? '';
-  const initials = (firstName.charAt(0) + (lastName.charAt(0) || '')).toUpperCase();
+  const firstName = user.profile?.firstName ?? "Admin";
+  const lastName = user.profile?.lastName ?? "";
+  const initials = (
+    firstName.charAt(0) + (lastName.charAt(0) || "")
+  ).toUpperCase();
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -33,13 +35,9 @@ const AdminDropdownMenu = ({ user, logout }) => {
         className="flex items-center space-x-2 text-sm font-medium text-gray-700 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
       >
         <div className="w-9 h-9 bg-slate-800 rounded-full flex items-center justify-center">
-          <span className="text-sm font-medium text-white">
-          {initials}
-          </span>
+          <span className="text-sm font-medium text-white">{initials}</span>
         </div>
-        <span className="hidden sm:block">
-          Bonjour, {firstName}
-        </span>
+        <span className="hidden sm:block">Bonjour, {firstName}</span>
       </button>
 
       {isOpen && (
@@ -47,7 +45,7 @@ const AdminDropdownMenu = ({ user, logout }) => {
           <div className="py-1">
             <div className="px-4 py-2 border-b">
               <p className="text-sm font-medium text-gray-900 truncate">
-              {firstName} {lastName}
+                {firstName} {lastName}
               </p>
               <p className="text-xs text-gray-500 truncate">{user.email}</p>
             </div>

@@ -3,19 +3,19 @@ import { useAuth } from "../contexts/AuthContext";
 import apiService from "../services/api";
 
 import {
-  MailIcon,
+  EnvelopeIcon,
   PhoneIcon,
-  LocationMarkerIcon,
+  MapPinIcon,
   GlobeAltIcon,
   PencilIcon,
   BriefcaseIcon,
   SparklesIcon,
   AcademicCapIcon,
-  OfficeBuildingIcon,
-  BadgeCheckIcon,
+  BuildingOfficeIcon as OfficeBuildingIcon,
+  CheckBadgeIcon,
   UserIcon,
   LinkIcon,
-} from "@heroicons/react/outline";
+} from "@heroicons/react/24/outline";
 
 // --- Composants d'aide pour le style ---
 
@@ -144,7 +144,7 @@ const CandidateProfile = ({
     {/* Colonne de Droite */}
     <div className="space-y-6">
       <ProfileCard title="Contact">
-        <InfoRow icon={<MailIcon />} label="Email" value={user.email} />
+        <InfoRow icon={<EnvelopeIcon />} label="Email" value={user.email} />
         {isEditing ? (
           <InputRow
             label="Téléphone"
@@ -314,7 +314,7 @@ const ClientProfile = ({
     {/* Colonne de Droite */}
     <div className="space-y-6">
       <ProfileCard title="Contact">
-        <InfoRow icon={<MailIcon />} label="Email" value={user.email} />
+        <InfoRow icon={<EnvelopeIcon />} label="Email" value={user.email} />
         {isEditing ? (
           <InputRow
             label="Téléphone"
@@ -556,7 +556,7 @@ const ProfilePage = () => {
               ) : (
                 user.profile.location && (
                   <p className="text-sm text-gray-500 mt-1 flex items-center justify-center sm:justify-start">
-                    <LocationMarkerIcon className="w-4 h-4 mr-1" />
+                    <MapPinIcon className="w-4 h-4 mr-1" />
                     {user.profile.location.city},{" "}
                     {user.profile.location.country}
                   </p>

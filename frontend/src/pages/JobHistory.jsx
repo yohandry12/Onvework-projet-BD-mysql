@@ -5,9 +5,9 @@ import {
   BriefcaseIcon,
   ClockIcon,
   UsersIcon,
-  PencilAltIcon,
-  DuplicateIcon,
-} from "@heroicons/react/outline";
+  PencilIcon as PencilAltIcon,
+  DocumentDuplicateIcon as DuplicateIcon,
+} from "@heroicons/react/24/outline";
 
 // Composant de Pagination (peut être extrait dans un fichier séparé)
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {

@@ -4,10 +4,10 @@ import { apiService } from "../services/api";
 import { useDebounce } from "../hooks/useDebounce";
 import ApplicationForm from "../pages/ApplicationForm";
 import {
-  SearchIcon,
+  MagnifyingGlassIcon,
   BriefcaseIcon,
-  RefreshIcon,
-} from "@heroicons/react/outline";
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 
 // --- COMPOSANT JobCard ENTIÈREMENT CORRIGÉ ---
 const JobCard = ({ job, onApply }) => {
@@ -51,7 +51,7 @@ const JobCard = ({ job, onApply }) => {
             {/* --- AJOUTER LE BADGE ICI --- */}
             {isRepublished && (
               <span className="flex items-center bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-1 rounded-full">
-                <RefreshIcon className="w-4 h-4 mr-1" />
+                <ArrowPathIcon className="w-4 h-4 mr-1" />
                 Republiée
               </span>
             )}
@@ -327,7 +327,7 @@ const Jobs = () => {
           </p>
           <div className="mt-6">
             <div className="relative">
-              <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Rechercher par mot-clé, compétence..."

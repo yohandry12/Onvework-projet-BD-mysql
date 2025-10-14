@@ -33,6 +33,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageTestimonials from "./pages/admin/ManageTestimonials";
 import ManageReports from "./pages/admin/ManageReports";
 import ClientProfilePage from "./pages/ClientProfilePage";
+import SettingsPage from "./pages/SettingsPage";
 // --- LAYOUTS ET COMPOSANTS ---
 import Header from "./components/Layout/Header";
 import Footer from "./components/Layout/Footer";
@@ -119,6 +120,7 @@ function AppRoutes() {
             <Route path="/jobs/create" element={<CreateJob />} />
             <Route path="/client/job-history" element={<JobHistory />} />
             <Route path="/clients/:clientId" element={<ClientProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
 

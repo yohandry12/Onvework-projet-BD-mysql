@@ -175,13 +175,13 @@
 
 import React, { useEffect } from "react";
 import {
-  XIcon,
-  MailIcon,
-  PhoneIcon,
-  LocationMarkerIcon,
-  AcademicCapIcon,
-  SparklesIcon, // Icône pour le badge
-} from "@heroicons/react/outline";
+  XMarkIcon as XIcon, // remplace XIcon (v1) par XMarkIcon (v2)
+  EnvelopeIcon as MailIcon, // remplace MailIcon (v1) par EnvelopeIcon (v2)
+  PhoneIcon, // PhoneIcon existe en v2, pas besoin d'alias
+  MapPinIcon as LocationMarkerIcon, // MapPinIcon (v2) -> LocationMarkerIcon (alias)
+  AcademicCapIcon, // identique en v2
+  SparklesIcon, // identique en v2
+} from "@heroicons/react/24/outline";
 
 // --- Composant d'aide pour afficher une ligne d'information ---
 const InfoRow = ({ icon, label, value }) => (

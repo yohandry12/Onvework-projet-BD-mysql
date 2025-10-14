@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { apiService } from "../../services/api";
-import { XIcon, FlagIcon } from "@heroicons/react/outline";
+import { XMarkIcon, FlagIcon } from "@heroicons/react/24/outline";
 
 const ReportModal = ({ contentId, contentType, onClose }) => {
   const [reason, setReason] = useState("");
@@ -50,7 +50,7 @@ const ReportModal = ({ contentId, contentType, onClose }) => {
             contenu
           </h2>
           <button onClick={onClose}>
-            <XIcon className="h-6 w-6 text-gray-500" />
+            <XMarkIcon className="h-6 w-6 text-gray-500" />
           </button>
         </div>
         <form onSubmit={handleSubmit}>

@@ -205,10 +205,10 @@ import { apiService } from "../services/api";
 import LoadingSpinner from "../components/UI/LoadingSpinner";
 import TalentCard from "../components/UI/TalentCard";
 import {
-  SearchIcon,
+  MagnifyingGlassIcon as SearchIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-} from "@heroicons/react/outline";
+} from "@heroicons/react/24/outline";
 import FreelancerProfileModal from "../components/UI/FreelancerProfileModal";
 import { useAuth } from "../contexts/AuthContext";
 // Nouveau composant pour les boutons de pagination

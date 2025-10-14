@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { apiService } from "../services/api";
-import { XIcon } from "@heroicons/react/outline";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 const ApplicationForm = ({ jobId, onClose, onSubmitted }) => {
   const [coverLetter, setCoverLetter] = useState("");
@@ -19,7 +19,9 @@ const ApplicationForm = ({ jobId, onClose, onSubmitted }) => {
   // --- VALIDATION DU FORMULAIRE ---
   const validateForm = () => {
     if (coverLetter.trim().length < 50) {
-      setError("Votre lettre de motivation doit contenir au moins 50 caractères.");
+      setError(
+        "Votre lettre de motivation doit contenir au moins 50 caractères."
+      );
       return false;
     }
     setError("");
@@ -51,13 +53,14 @@ const ApplicationForm = ({ jobId, onClose, onSubmitted }) => {
         config // On passe la configuration
       );
       onSubmitted();
-
     } catch (err) {
       // Si l'erreur est un timeout, on affiche un message plus clair
-      if (err.code === 'ECONNABORTED') {
-          setError("L'envoi a pris trop de temps et a été annulé. Veuillez réessayer avec une meilleure connexion ou des fichiers plus petits.");
+      if (err.code === "ECONNABORTED") {
+        setError(
+          "L'envoi a pris trop de temps et a été annulé. Veuillez réessayer avec une meilleure connexion ou des fichiers plus petits."
+        );
       } else {
-          setError(err.response?.data?.error || "Une erreur est survenue.");
+        setError(err.response?.data?.error || "Une erreur est survenue.");
       }
       console.error("❌ Erreur complète:", err);
     } finally {
@@ -75,7 +78,7 @@ const ApplicationForm = ({ jobId, onClose, onSubmitted }) => {
               Postuler à la mission
             </h2>
             <button type="button" onClick={onClose}>
-              <XIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
+              <XMarkIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
             </button>
           </div>
 
@@ -150,16 +153,20 @@ const ApplicationForm = ({ jobId, onClose, onSubmitted }) => {
               disabled={loading}
               className="px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-300"
             >
-              {loading ? `Envoi en cours... ${uploadProgress > 0 ? `${uploadProgress}%` : ''}` : "Envoyer ma candidature"}
+              {loading
+                ? `Envoi en cours... ${
+                    uploadProgress > 0 ? `${uploadProgress}%` : ""
+                  }`
+                : "Envoyer ma candidature"}
             </button>
           </div>
-           {/* --- NOUVEAU : LA BARRE DE PROGRESSION --- */}
-           {loading && uploadProgress > 0 && (
+          {/* --- NOUVEAU : LA BARRE DE PROGRESSION --- */}
+          {loading && uploadProgress > 0 && (
             <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                ></div>
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
             </div>
           )}
         </form>

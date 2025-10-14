@@ -164,12 +164,12 @@ import { apiService } from "../../services/api";
 // On importe depuis 'solid' pour les icônes pleines
 import {
   CheckIcon,
-  XIcon,
+  XMarkIcon,
   StarIcon as StarSolid,
   InformationCircleIcon,
-} from "@heroicons/react/solid";
+} from "@heroicons/react/24/solid";
 // On importe depuis 'outline' pour les icônes creuses
-import { StarIcon as StarOutline } from "@heroicons/react/outline";
+import { StarIcon as StarOutline } from "@heroicons/react/24/outline";
 
 const ManageTestimonials = () => {
   const [testimonials, setTestimonials] = useState([]);
@@ -181,15 +181,18 @@ const ManageTestimonials = () => {
     setError("");
     try {
       const response = await apiService.testimonials.getAllForAdmin();
-      
+
       // --- CORRECTION CLÉ : On extrait le tableau de la réponse ---
-      if (response && response.success && Array.isArray(response.testimonials)) {
+      if (
+        response &&
+        response.success &&
+        Array.isArray(response.testimonials)
+      ) {
         setTestimonials(response.testimonials);
       } else {
         console.error("Format de réponse inattendu:", response);
         setTestimonials([]); // Assure que c'est toujours un tableau
       }
-
     } catch (err) {
       setError("Impossible de charger les témoignages.");
     } finally {
@@ -257,7 +260,7 @@ const ManageTestimonials = () => {
                 <tr key={testimonial.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {(`${testimonial.author?.profile?.firstName} ${testimonial.author?.profile?.lastName}`)||
+                      {`${testimonial.author?.profile?.firstName} ${testimonial.author?.profile?.lastName}` ||
                         "Utilisateur supprimé"}
                     </div>
                     <div className="text-sm text-gray-500 capitalize">
@@ -307,7 +310,7 @@ const ManageTestimonials = () => {
                       }`}
                     >
                       {testimonial.isApproved ? (
-                        <XIcon className="h-5 w-5" />
+                        <XMarkIcon className="h-5 w-5" />
                       ) : (
                         <CheckIcon className="h-5 w-5" />
                       )}

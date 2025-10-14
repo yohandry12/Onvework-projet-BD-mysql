@@ -171,7 +171,7 @@ module.exports = function (io) {
     }
   );
 
-  // --- GET /api/jobs/my-jobs - Récupérer les jobs postés par le client ---
+  // --- GET /api/jobs/my-jobs - Récupérer les jobs postés par le client (VERSION FIABLE) ---
   router.get(
     "/my-jobs",
     authenticateToken,
@@ -179,54 +179,43 @@ module.exports = function (io) {
     async (req, res) => {
       try {
         const clientId = req.user.id;
-        const { page = 1, limit = 10 } = req.query;
+        const { page = 1, limit = 10, search, status } = req.query;
 
         const pageNum = parseInt(page, 10);
         const limitNum = parseInt(limit, 10);
         const offset = (pageNum - 1) * limitNum;
 
-        const { count, rows: clientJobs } = await Job.findAndCountAll({
+        // --- ÉTAPE 1 : Compter le nombre TOTAL de candidatures. C'est la source de vérité. ---
+        // Cette requête est simple, rapide, et toujours juste.
+        const totalApplications = await Application.count({
+          where: { clientId },
+        });
+
+        // --- ÉTAPE 2 : On récupère la LISTE des jobs pour la pagination, sans se soucier du comptage. ---
+        // Cette partie reste similaire à votre code.
+        const jobs = await Job.findAll({
           where: { clientId: clientId },
           order: [["createdAt", "DESC"]],
           limit: limitNum,
           offset: offset,
-          distinct: true,
           include: [
             {
               model: Application,
               as: "applications",
-              attributes: [
-                "id",
-                "status",
-                "coverLetter",
-                "attachments",
-                "createdAt",
-              ],
               include: {
                 model: User,
                 as: "candidate",
-                attributes: ["id", "email", "role"],
-                include: {
-                  model: CandidateProfile,
-                  as: "candidateProfile",
-                  attributes: [
-                    "firstName",
-                    "lastName",
-                    "profession",
-                    "avatar",
-                    "bio",
-                    "skills",
-                  ],
-                },
+                include: { model: CandidateProfile, as: "candidateProfile" },
               },
             },
           ],
         });
 
-        const totalPages = Math.ceil(count / limitNum);
+        // --- ÉTAPE 3 (Facultatif mais propre) : On compte le nombre total de JOBS. ---
+        const totalJobs = await Job.count({ where: { clientId } });
 
-        // Transformer les données pour normaliser la structure
-        const formattedJobs = clientJobs.map((job) => {
+        // Votre logique de formatage est excellente, on la garde.
+        const formattedJobs = jobs.map((job) => {
           const plainJob = job.get({ plain: true });
           plainJob.applications = (plainJob.applications || []).map((app) => {
             if (app.candidate && app.candidate.candidateProfile) {
@@ -246,9 +235,11 @@ module.exports = function (io) {
           success: true,
           jobs: formattedJobs,
           pagination: {
+            // La pagination se base sur le nombre total de jobs
             currentPage: pageNum,
-            totalPages,
-            totalResults: count,
+            totalPages: Math.ceil(totalJobs / limitNum),
+            // IMPORTANT : On envoie le VRAI nombre d'applications ici !
+            totalResults: totalApplications,
           },
         });
       } catch (error) {

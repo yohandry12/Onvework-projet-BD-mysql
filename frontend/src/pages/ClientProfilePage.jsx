@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { apiService } from "../services/api";
 import {
-  MailIcon,
+  EnvelopeIcon,
   PhoneIcon,
   GlobeAltIcon,
-  OfficeBuildingIcon,
-  LocationMarkerIcon,
-} from "@heroicons/react/outline";
+  BuildingOfficeIcon,
+  MapPinIcon as LocationMarkerIcon,
+} from "@heroicons/react/24/outline";
 
 const ClientProfilePage = () => {
   const { clientId } = useParams();
@@ -91,7 +91,7 @@ const ClientProfilePage = () => {
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center text-sm">
-                    <OfficeBuildingIcon className="w-5 h-5 text-gray-400 mr-3" />
+                    <BuildingOfficeIcon className="w-5 h-5 text-gray-400 mr-3" />
                     <span className="font-medium text-gray-500">
                       Type :&nbsp;
                     </span>
@@ -127,7 +127,7 @@ const ClientProfilePage = () => {
                 Contact
               </h3>
               <div className="flex items-center text-sm">
-                <MailIcon className="w-5 h-5 text-gray-400 mr-3" />
+                <EnvelopeIcon className="w-5 h-5 text-gray-400 mr-3" />
                 <span className="text-gray-700">{client.email}</span>
               </div>
               <div className="flex items-center text-sm">

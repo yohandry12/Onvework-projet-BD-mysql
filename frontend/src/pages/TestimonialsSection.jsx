@@ -10,8 +10,8 @@ import "swiper/css";
 import "swiper/css/navigation";
 
 // Icônes (utilisez heroicons ou lucide-react selon votre préférence)
-import { StarIcon } from "@heroicons/react/solid";
-import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/outline";
+import { StarIcon } from "@heroicons/react/24/solid";
+import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
 
 // --- Sous-composant pour les boutons de navigation personnalisés ---
 const SwiperNavButtons = () => {
@@ -83,32 +83,35 @@ const TestimonialsSection = () => {
     let mounted = true; // Pour éviter les mises à jour d'état sur un composant démonté
     setLoading(true);
 
-    apiService.testimonials.getFeatured()
+    apiService.testimonials
+      .getFeatured()
       .then((response) => {
         if (!mounted) return;
-        
+
         // --- LA CORRECTION EST ICI ---
         // On vérifie que la réponse est bonne ET que la clé 'testimonials' est bien un tableau.
         if (response.success && Array.isArray(response.testimonials)) {
           setTestimonials(response.testimonials);
         } else {
-            console.warn("La réponse de l'API pour les témoignages n'a pas le format attendu.");
-            setTestimonials([]); // On met un tableau vide en cas de problème
+          console.warn(
+            "La réponse de l'API pour les témoignages n'a pas le format attendu."
+          );
+          setTestimonials([]); // On met un tableau vide en cas de problème
         }
       })
       .catch((err) => {
-          if (mounted) {
-            console.error("Erreur chargement témoignages:", err);
-            setTestimonials([]);
-          }
+        if (mounted) {
+          console.error("Erreur chargement témoignages:", err);
+          setTestimonials([]);
+        }
       })
       .finally(() => {
-          if (mounted) setLoading(false);
+        if (mounted) setLoading(false);
       });
-    
+
     return () => {
-        mounted = false;
-    }
+      mounted = false;
+    };
   }, []);
 
   if (loading) {

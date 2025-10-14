@@ -8,11 +8,11 @@ import {
   BriefcaseIcon,
   DocumentTextIcon,
   CheckCircleIcon,
-  TrendingUpIcon,
+  ArrowTrendingUpIcon as TrendingUpIcon,
   StarIcon,
   ChartBarIcon,
   BellIcon,
-} from "@heroicons/react/outline";
+} from "@heroicons/react/24/outline";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);

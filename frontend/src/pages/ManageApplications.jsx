@@ -27,9 +27,9 @@ import {
   XCircleIcon,
   ClockIcon,
   StarIcon,
-  MailIcon,
+  EnvelopeIcon,
   PhoneIcon,
-  LocationMarkerIcon,
+  MapPinIcon,
   UserCircleIcon,
   AcademicCapIcon,
   SparklesIcon,
@@ -37,8 +37,8 @@ import {
   CalendarIcon, // Ajout pour la disponibilité
   CurrencyDollarIcon, // Ajout pour le tarif
   LinkIcon,
-  DownloadIcon,
-} from "@heroicons/react/outline";
+  ArrowDownTrayIcon as DownloadIcon,
+} from "@heroicons/react/24/outline";
 
 // Composant pour la pagination
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
@@ -84,9 +84,9 @@ export default function ManageApplications() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  
+
   // J'ai renommé `totalApplications` en `totalResults` pour correspondre à la pagination
-  const [totalResults, setTotalResults] = useState(0); 
+  const [totalResults, setTotalResults] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
 
@@ -107,23 +107,36 @@ export default function ManageApplications() {
   const fetchApplications = useCallback(async (page, search, status) => {
     setLoading(true);
     try {
-      const params = { page, limit: 10, search, status: status === 'all' ? '' : status };
-      
+      const params = {
+        page,
+        limit: 10,
+        search,
+        status: status === "all" ? "" : status,
+      };
+
       // 1. On appelle bien la bonne API
       const response = await apiService.jobs.getMyJobs(params);
-      
+
       if (response.success) {
-          // 2. On transforme les données : on passe de [job avec [app]] à [app avec job]
-          const allApplications = (response.jobs || []).reduce((acc, job) => {
-              const appsWithJobInfo = (job.applications || []).map(app => {
-                  // Reconstruire l'objet `candidate.profile` que le JSX attend
-                  if (app.candidate) {
-                    app.candidate.profile = { ...app.candidate };
-                  }
-                  return { ...app, job: { id: job.id, title: job.title, status: job.status, category: job.category }};
-              });
-              return [...acc, ...appsWithJobInfo];
-          }, []);
+        // 2. On transforme les données : on passe de [job avec [app]] à [app avec job]
+        const allApplications = (response.jobs || []).reduce((acc, job) => {
+          const appsWithJobInfo = (job.applications || []).map((app) => {
+            // Reconstruire l'objet `candidate.profile` que le JSX attend
+            if (app.candidate) {
+              app.candidate.profile = { ...app.candidate };
+            }
+            return {
+              ...app,
+              job: {
+                id: job.id,
+                title: job.title,
+                status: job.status,
+                category: job.category,
+              },
+            };
+          });
+          return [...acc, ...appsWithJobInfo];
+        }, []);
 
         // 3. On met à jour les états avec les bonnes données
         setApplications(allApplications);
@@ -132,10 +145,12 @@ export default function ManageApplications() {
 
         // 4. On utilise les stats renvoyées par le backend
         setHeaderStats({
-          totalJobs: response.pagination?.totalResults || response.jobs.length, 
-          pending: allApplications.filter(app => app.status === 'pending').length,
-          accepted: allApplications.filter(app => app.status === 'accepted').length,
-      });
+          totalJobs: response.pagination?.totalResults || response.jobs.length,
+          pending: allApplications.filter((app) => app.status === "pending")
+            .length,
+          accepted: allApplications.filter((app) => app.status === "accepted")
+            .length,
+        });
       }
     } catch (err) {
       console.error("Erreur lors de la récupération des candidatures:", err);
@@ -216,8 +231,24 @@ export default function ManageApplications() {
       alert("Une erreur est survenue.");
     }
   };
-  
-  
+
+  const formatLocation = (location) => {
+    // Si location n'existe pas ou n'est pas un objet, on renvoie le fallback.
+    if (!location || typeof location !== "object") {
+      return "Non renseignée";
+    }
+    // On extrait city et country, en gérant le cas où ils seraient absents.
+    const city = location.city?.trim() || "";
+    const country = location.country?.trim() || "";
+
+    // On construit la chaîne de caractères finale
+    if (city && country) {
+      return `${city}, ${country}`;
+    }
+    // S'il n'y a que la ville ou que le pays, on affiche ce qu'on a.
+    return city || country || "Non renseignée";
+  };
+
   if (loading && applications.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -278,7 +309,7 @@ export default function ManageApplications() {
             </div>
           </div>
 
-          <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase">
+          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b text-xs font-medium text-gray-500 uppercase">
             <div className="col-span-3">Candidat</div>
             <div className="col-span-3">Mission Concernée</div>
             <div className="col-span-2">Localisation</div>
@@ -296,61 +327,102 @@ export default function ManageApplications() {
               const isMissionFinished = job?.status === "filled";
 
               return (
+                // On enlève le 'grid' ici pour qu'il soit contrôlé par chaque ligne
+                // On ajoute un padding mobile et un reset pour desktop
                 <div
                   key={app.id}
-                  className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 items-center"
+                  className="p-4 md:p-0 md:grid md:grid-cols-12 md:gap-4 md:px-6 md:py-4 hover:bg-gray-50 items-center"
                 >
-                  <div className="col-span-3 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold flex-shrink-0">
-                      {candidate?.profile?.firstName?.charAt(0) || "U"}
-                      {candidate?.profile?.lastName?.charAt(0) || ""}
-                    </div>
-                    <div>
-                      <button
-                        onClick={() => handleViewProfile(app)}
-                        className="font-medium text-gray-900 hover:text-blue-600 text-left truncate"
-                      >
-                        {fullName || "Anonyme"}
-                      </button>
+                  {/* --- COLONNE 1: CANDIDAT --- */}
+                  {/* 'md:col-span-3' recrée votre tableau sur desktop */}
+                  {/* Les classes sans préfixe s'appliquent sur mobile */}
+                  <div className="md:col-span-3 flex items-center justify-between">
+                    {/* LABEL POUR MOBILE : affiché seulement en-dessous de 'md' */}
+                    <span className="md:hidden text-xs font-bold text-gray-500 uppercase">
+                      Candidat
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold flex-shrink-0">
+                        {candidate?.profile?.firstName?.charAt(0) || "U"}
+                        {candidate?.profile?.lastName?.charAt(0) || ""}
+                      </div>
+                      <div>
+                        <button
+                          onClick={() => handleViewProfile(app)}
+                          className="font-medium text-gray-900 hover:text-blue-600 text-left"
+                        >
+                          {fullName || "Anonyme"}
+                        </button>
+                        {/* Profession visible sous le nom sur mobile */}
+                        <p className="md:hidden text-sm text-gray-600">
+                          {candidate?.profile?.profession || "-"}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="col-span-3">
-                    <p className="text-sm font-medium text-gray-800 truncate">
-                      {job?.title}
-                    </p>
-                    <p className="text-xs text-gray-500">{job?.category}</p>
+
+                  {/* --- COLONNE 2: MISSION CONCERNÉE --- */}
+                  {/* Chaque section est espacée verticalement sur mobile (mt-3) */}
+                  <div className="md:col-span-3 mt-3 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 flex justify-between items-center">
+                    <span className="md:hidden text-xs font-bold text-gray-500 uppercase">
+                      Mission
+                    </span>
+                    <div className="text-right md:text-left">
+                      <p className="text-sm font-medium text-gray-800">
+                        {job?.title}
+                      </p>
+                      <p className="text-xs text-gray-500">{job?.category}</p>
+                    </div>
                   </div>
-                  <div className="col-span-2">
+
+                  {/* --- COLONNE 3: LOCALISATION --- */}
+                  <div className="md:col-span-2 mt-3 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 flex justify-between items-center">
+                    <span className="md:hidden text-xs font-bold text-gray-500 uppercase">
+                      Localisation
+                    </span>
                     <span className="text-sm text-gray-900 flex items-center gap-1">
                       <MapPin className="w-4 h-4 text-gray-400" />
-                      {candidate?.location || "Non renseignée"}
+                      {formatLocation(candidate?.location)}
                     </span>
                   </div>
-                  <div className="col-span-2">
+
+                  {/* --- COLONNE 4: PROFESSION (uniquement visible sur desktop maintenant) --- */}
+                  <div className="md:col-span-2 hidden md:block">
                     <span className="text-sm text-gray-600">
                       {candidate?.profile?.profession || "-"}
                     </span>
                   </div>
-                  <div className="col-span-2">
-                    {isMissionFinished && app.status === "accepted" ? (
-                      <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                        TERMINÉE
-                      </span>
-                    ) : app.status === "pending" ? (
-                      <span className="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
-                        EN ATTENTE
-                      </span>
-                    ) : app.status === "accepted" ? (
-                      <span className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                        EN MISSION
-                      </span>
-                    ) : app.status === "rejected" ? (
-                      <span className="inline-flex items-center px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
-                        REFUSÉE
-                      </span>
-                    ) : null}
+
+                  {/* --- COLONNE 5: STATUT --- */}
+                  <div className="md:col-span-2 mt-3 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 flex justify-between items-center">
+                    <span className="md:hidden text-xs font-bold text-gray-500 uppercase">
+                      Statut
+                    </span>
+                    {/* On s'assure que le statut est aligné à droite sur desktop seulement */}
+                    <div className="md:ml-auto">
+                      {isMissionFinished && app.status === "accepted" ? (
+                        <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                          TERMINÉE
+                        </span>
+                      ) : app.status === "pending" ? (
+                        <span className="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                          EN ATTENTE
+                        </span>
+                      ) : app.status === "accepted" ? (
+                        <span className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                          EN MISSION
+                        </span>
+                      ) : app.status === "rejected" ? (
+                        <span className="inline-flex items-center px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                          REFUSÉE
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="col-span-12 flex items-center gap-2 mt-2 pl-12">
+
+                  {/* --- LIGNE DES BOUTONS D'ACTION --- */}
+                  {/* Le code ici ne change pas, il est déjà parfait pour s'adapter */}
+                  <div className="md:col-span-12 flex flex-wrap items-center gap-2 mt-4 md:pl-12 pt-4 border-t md:border-t-0">
                     {app.status === "pending" && (
                       <>
                         <button
@@ -385,10 +457,9 @@ export default function ManageApplications() {
                             handleMarkAsCompleted(job.id, candidate.id)
                           }
                           disabled={isMissionFinished}
-                          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 text-sm font-medium"
                         >
                           <CheckCircleLucide className="w-4 h-4" /> Terminer
-                          mission
                         </button>
                       </>
                     )}
@@ -457,7 +528,7 @@ export default function ManageApplications() {
                     </h3>
                     <div className="space-y-4">
                       <div className="flex items-start space-x-3 text-sm">
-                        <MailIcon className="h-5 w-5 text-gray-400 mt-0.5" />
+                        <EnvelopeIcon className="h-5 w-5 text-gray-400 mt-0.5" />
                         <div>
                           <p className="font-medium text-gray-500">Email</p>
                           <p className="text-gray-800">

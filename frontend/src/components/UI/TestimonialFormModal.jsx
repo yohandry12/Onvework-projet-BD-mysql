@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { apiService } from "../../services/api";
-import { XIcon } from "@heroicons/react/outline";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 const TestimonialFormModal = ({ onClose, onSubmitted }) => {
   const [content, setContent] = useState("");
@@ -41,7 +41,7 @@ const TestimonialFormModal = ({ onClose, onSubmitted }) => {
             onClick={onClose}
             className="p-1 rounded-full hover:bg-gray-100"
           >
-            <XIcon className="h-6 w-6 text-gray-500" />
+            <XMarkIcon className="h-6 w-6 text-gray-500" />
           </button>
         </div>
 

@@ -1,6 +1,6 @@
 import React from "react";
 import { useNetworkStatus } from "../../contexts/NetworkStatusContext";
-import { WifiOffIcon } from "@heroicons/react/solid";
+import { SignalSlashIcon as WifiOffIcon } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
 
 const OfflineBanner = () => {

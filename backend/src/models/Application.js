@@ -11,7 +11,40 @@ module.exports = (sequelize) => {
         autoIncrement: true,
         allowNull: false,
       },
-      // Les champs 'jobId', 'candidateId', 'clientId' seront créés par les associations
+
+      // ====================================================================
+      // --- CORRECTION CLÉ : DÉCLARER EXPLICITEMENT LES CLÉS ÉTRANGÈRES ---
+      // On supprime le commentaire erroné et on ajoute les définitions.
+      // ====================================================================
+      jobId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        field: "job_id", // Respecte la convention 'underscored: true'
+        references: {
+          model: "jobs",
+          key: "id",
+        },
+      },
+      candidateId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        field: "candidate_id",
+        references: {
+          model: "users",
+          key: "id",
+        },
+      },
+      clientId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        field: "client_id",
+        references: {
+          model: "users", // La table des clients
+          key: "id",
+        },
+      },
+      // ====================================================================
+
       coverLetter: {
         type: DataTypes.TEXT,
         allowNull: false,
@@ -24,7 +57,7 @@ module.exports = (sequelize) => {
         },
       },
       attachments: {
-        type: DataTypes.JSON, // Stocker le tableau d'objets en JSON
+        type: DataTypes.JSON,
         defaultValue: [],
       },
       status: {
@@ -43,7 +76,7 @@ module.exports = (sequelize) => {
         field: "client_notes",
       },
       history: {
-        type: DataTypes.JSON, // L'historique est parfait pour un champ JSON
+        type: DataTypes.JSON,
         defaultValue: [],
       },
       withdrawnReason: {
@@ -55,14 +88,10 @@ module.exports = (sequelize) => {
       sequelize,
       modelName: "Application",
       tableName: "applications",
-      timestamps: true, // Sequelize gère createdAt et updatedAt
+      timestamps: true,
       underscored: true,
-      indexes: [
-        // Index composé pour l'unicité
-        { unique: true, fields: ["job_id", "candidate_id"] },
-      ],
+      indexes: [{ unique: true, fields: ["job_id", "candidate_id"] }],
       hooks: {
-        // Hook avant la création pour initialiser l'historique
         beforeCreate: (application, options) => {
           application.history = [
             {
@@ -73,16 +102,6 @@ module.exports = (sequelize) => {
             },
           ];
         },
-        // Hook après sauvegarde (création ou mise à jour) pour le compteur
-        // afterSave: async (application, options) => {
-        //     try {
-        //         const Job = sequelize.models.Job;
-        //         const count = await sequelize.models.Application.count({ where: { jobId: application.jobId } });
-        //         await Job.update({ applicationCount: count }, { where: { id: application.jobId } });
-        //     } catch(error) {
-        //         console.error("Erreur du hook afterSave sur Application:", error);
-        //     }
-        // }
       },
     }
   );

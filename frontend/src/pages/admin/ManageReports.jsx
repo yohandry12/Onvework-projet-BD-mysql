@@ -5,7 +5,7 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   EyeIcon,
-} from "@heroicons/react/outline";
+} from "@heroicons/react/24/outline";
 
 const ManageReports = () => {
   const [reports, setReports] = useState([]);
@@ -18,7 +18,7 @@ const ManageReports = () => {
     try {
       // 1. Appel de l'API
       const response = await apiService.reports.getAllForAdmin();
-      
+
       // 2. --- CORRECTION CLÉ : Extraire le tableau de la réponse ---
       if (response && response.success && Array.isArray(response.reports)) {
         setReports(response.reports);
@@ -26,7 +26,6 @@ const ManageReports = () => {
         console.error("Format de réponse inattendu:", response);
         setReports([]); // S'assurer que 'reports' reste un tableau
       }
-
     } catch (err) {
       setError("Impossible de charger les signalements.");
     } finally {
@@ -40,7 +39,9 @@ const ManageReports = () => {
 
   const handleUpdateStatus = async (reportId, status) => {
     if (
-      !window.confirm(`Voulez-vous vraiment marquer ce signalement comme "${status}" ?`)
+      !window.confirm(
+        `Voulez-vous vraiment marquer ce signalement comme "${status}" ?`
+      )
     ) {
       return;
     }
@@ -54,32 +55,47 @@ const ManageReports = () => {
       console.error(err);
     }
   };
-  
+
   // Fonction d'aide pour afficher le contenu signalé (polymorphique)
   const renderReportedContent = (report) => {
     const content = report.content;
     if (!content) {
-      return <span className="text-gray-400 italic">Contenu supprimé ou indisponible</span>;
+      return (
+        <span className="text-gray-400 italic">
+          Contenu supprimé ou indisponible
+        </span>
+      );
     }
-    
+
     let linkTo, title;
 
-    if (report.contentType === 'job') {
+    if (report.contentType === "job") {
       linkTo = `/jobs/${content.id}`;
       title = content.title;
-    } else if (report.contentType === 'user') {
+    } else if (report.contentType === "user") {
       // Mettez le bon chemin pour un profil utilisateur
-      linkTo = `/profile/${content.id}`; 
-      title = `${content.profile?.firstName || ''} ${content.profile?.lastName || ''}`.trim() || 'Profil utilisateur';
+      linkTo = `/profile/${content.id}`;
+      title =
+        `${content.profile?.firstName || ""} ${
+          content.profile?.lastName || ""
+        }`.trim() || "Profil utilisateur";
     } else {
-      return <span>Contenu de type inconnu</span>
+      return <span>Contenu de type inconnu</span>;
     }
-    
+
     return (
-        <>
-            <Link to={linkTo} target="_blank" className="text-blue-600 hover:underline">{title}</Link>
-            <div className="text-sm text-gray-500 capitalize">{report.contentType}</div>
-        </>
+      <>
+        <Link
+          to={linkTo}
+          target="_blank"
+          className="text-blue-600 hover:underline"
+        >
+          {title}
+        </Link>
+        <div className="text-sm text-gray-500 capitalize">
+          {report.contentType}
+        </div>
+      </>
     );
   };
 
@@ -126,7 +142,7 @@ const ManageReports = () => {
               reports.map((report) => (
                 <tr key={report.id}>
                   <td className="px-6 py-4 text-sm font-medium">
-                  {renderReportedContent(report)}
+                    {renderReportedContent(report)}
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm font-semibold text-red-600">
@@ -139,7 +155,7 @@ const ManageReports = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {(`${report.reporter?.profile?.firstName} ${report.reporter?.profile?.lastName}`) ||
+                    {`${report.reporter?.profile?.firstName} ${report.reporter?.profile?.lastName}` ||
                       "Utilisateur Anonyme"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
@@ -151,9 +167,7 @@ const ManageReports = () => {
                       <CheckCircleIcon className="h-5 w-5" />
                     </button>
                     <button
-                      onClick={() =>
-                        handleUpdateStatus(report.id, "dismissed")
-                      }
+                      onClick={() => handleUpdateStatus(report.id, "dismissed")}
                       title="Rejeter le signalement (aucune action)"
                       className="p-2 rounded-full text-red-600 bg-red-100 hover:bg-red-200"
                     >

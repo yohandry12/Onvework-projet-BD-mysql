@@ -14,10 +14,10 @@ import {
   PlusIcon,
   BellIcon,
   StarIcon,
-  TrendingUpIcon,
+  ArrowTrendingUpIcon,
   CalendarIcon,
-  LocationMarkerIcon,
-} from "@heroicons/react/outline";
+  MapPinIcon,
+} from "@heroicons/react/24/outline";
 import { Award } from "lucide-react";
 import Modal from "../components/UI/Modal";
 import CreateJob from "./CreateJob";
@@ -195,9 +195,7 @@ const Dashboard = () => {
               <EyeIcon className="h-8 w-8 text-blue-500" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">
-                Vues profil
-              </p>
+              <p className="text-sm font-medium text-gray-500">Vues profil</p>
               <p className="text-2xl font-bold text-gray-900">
                 {stats?.profileViews}
               </p>
@@ -205,8 +203,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
-      
 
       {/* Actions rapides */}
       <div className="bg-white rounded-lg shadow p-6">
@@ -367,7 +363,7 @@ const Dashboard = () => {
           {user?.profile?.location?.city &&
             user?.profile?.location?.country && (
               <>
-                <LocationMarkerIcon className="h-4 w-4 ml-4 mr-1" />
+                <MapPinIcon className="h-4 w-4 ml-4 mr-1" />
                 <span className="text-sm">
                   {user.profile.location.city}, {user.profile.location.country}
                 </span>

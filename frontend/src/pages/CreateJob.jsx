@@ -260,7 +260,7 @@ const CreateJob = () => {
           <div className="space-y-6">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <div className="flex items-center">
-                <Info className="h-5 w-5 text-blue-500 mr-2" />
+                <Info className="hidden md:inline h-5 w-5 text-blue-500 mr-2" />
                 <span className="text-blue-700 font-medium">
                   Étape 1/5 - Définissez votre mission
                 </span>
@@ -355,7 +355,7 @@ const CreateJob = () => {
           <div className="space-y-6">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
               <div className="flex items-center">
-                <DollarSign className="h-5 w-5 text-green-500 mr-2" />
+                <DollarSign className="hidden md:inline h-5 w-5 text-green-500 mr-2" />
                 <span className="text-green-700 font-medium">
                   Étape 2/5 - Budget et localisation
                 </span>
@@ -364,7 +364,7 @@ const CreateJob = () => {
 
             <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <DollarSign className="h-5 w-5 mr-2 text-blue-500" />
+                <DollarSign className="hidden md:inline h-5 w-5 mr-2 text-blue-500" />
                 Fourchette budgétaire
               </h3>
 
@@ -424,7 +424,7 @@ const CreateJob = () => {
 
             <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <MapPin className="h-5 w-5 mr-2 text-blue-500" />
+                <MapPin className="hidden md:inline h-5 w-5 mr-2 text-blue-500" />
                 Localisation
               </h3>
 
@@ -482,7 +482,7 @@ const CreateJob = () => {
           <div className="space-y-6">
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
               <div className="flex items-center">
-                <Users className="h-5 w-5 text-purple-500 mr-2" />
+                <Users className="hidden md:inline h-5 w-5 text-purple-500 mr-2" />
                 <span className="text-purple-700 font-medium">
                   Étape 3/5 - Profil candidat idéal
                 </span>
@@ -575,7 +575,7 @@ const CreateJob = () => {
           <div className="space-y-6">
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
               <div className="flex items-center">
-                <Calendar className="h-5 w-5 text-orange-500 mr-2" />
+                <Calendar className="hidden md:inline h-5 w-5 text-orange-500 mr-2" />
                 <span className="text-orange-700 font-medium">
                   Étape 4/5 - Planning du projet
                 </span>
@@ -643,7 +643,7 @@ const CreateJob = () => {
           <div className="space-y-6">
             <div className="bg-pink-50 border border-pink-200 rounded-lg p-4 mb-6">
               <div className="flex items-center">
-                <Star className="h-5 w-5 text-pink-500 mr-2" />
+                <Star className="hidden md:inline h-5 w-5 text-pink-500 mr-2" />
                 <span className="text-pink-700 font-medium">
                   Étape 5/5 - Options et finalisation
                 </span>
@@ -704,13 +704,13 @@ const CreateJob = () => {
                   </div>
                 </label>
 
-                <label className="flex items-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
+                <label className="flex items-start md:items-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
                   <input
                     name="isUrgent"
                     type="checkbox"
                     checked={form.isUrgent}
                     onChange={handleChange}
-                    className="w-5 h-5 text-red-600 border-gray-300 rounded focus:outline-none focus:ring-red-500"
+                    className="w-5 h-5 text-red-600 border-gray-300 rounded focus:outline-none focus:ring-red-500 mt-1 md:mt-0"
                   />
                   <div className="ml-4">
                     <div className="flex items-center">
@@ -722,7 +722,7 @@ const CreateJob = () => {
                         Gratuit
                       </span> */}
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-gray-500 mt-1 md:mt-0">
                       Affiche un badge "Urgent" pour attirer l'attention
                     </p>
                   </div>
@@ -738,11 +738,11 @@ const CreateJob = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100 py-8 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             Publier une nouvelle mission
           </h1>
           <p className="text-lg text-gray-600">
@@ -751,7 +751,7 @@ const CreateJob = () => {
         </div>
 
         {/* Progress Steps */}
-        <div className="mb-8">
+        <div className="hidden md:inline mb-8">
           <div className="flex justify-between items-center">
             {steps.map((step, index) => {
               const Icon = step.icon;
@@ -759,9 +759,12 @@ const CreateJob = () => {
               const isCompleted = currentStep > step.number;
 
               return (
-                <div key={step.number} className="flex items-center">
+                <div
+                  key={step.number}
+                  className="flex flex-grow items-center last:flex-grow-0"
+                >
                   <div
-                    className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-200 ${
+                    className={`flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full border-2 transition-all duration-200 flex-shrink-0 ${
                       isActive
                         ? "bg-blue-600 border-blue-600 text-white"
                         : isCompleted
@@ -770,9 +773,9 @@ const CreateJob = () => {
                     }`}
                   >
                     {isCompleted ? (
-                      <CheckCircle className="h-6 w-6" />
+                      <CheckCircle className="h-5 md:h-6 w-5 md:w-6" />
                     ) : (
-                      <Icon className="h-6 w-6" />
+                      <Icon className="h-5 md:h-6 w-5 md:w-6" />
                     )}
                   </div>
                   <div
@@ -791,7 +794,7 @@ const CreateJob = () => {
             })}
           </div>
 
-          <div className="flex justify-between mt-2">
+          <div className="hidden md:flex justify-between mt-2">
             {steps.map((step) => (
               <div
                 key={step.number}
@@ -834,7 +837,7 @@ const CreateJob = () => {
           )}
 
           {/* Form Content */}
-          <form onSubmit={(e) => e.preventDefault()} className="p-8">
+          <form onSubmit={(e) => e.preventDefault()} className="p-4 sm:p-8">
             {getStepContent()}
 
             {/* Navigation Buttons */}
@@ -843,7 +846,7 @@ const CreateJob = () => {
                 type="button"
                 onClick={prevStep}
                 disabled={currentStep === 1}
-                className={`flex items-center px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+                className={`flex items-center px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-medium transition-all duration-200 text-sm sm:text-base ${
                   currentStep === 1
                     ? "text-gray-400 cursor-not-allowed"
                     : "text-gray-700 bg-gray-100 hover:bg-gray-200 shadow-sm"
@@ -860,7 +863,7 @@ const CreateJob = () => {
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                  className="flex items-center px-4 py-2 sm:px-6 sm:py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 text-sm sm:text-base"
                 >
                   Suivant
                 </button>
@@ -869,7 +872,7 @@ const CreateJob = () => {
                   type="button"
                   onClick={handleFinalSubmit}
                   disabled={loading}
-                  className="flex items-center px-8 py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  className="flex items-center px-4 py-2 sm:px-8 sm:py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm sm:text-base"
                 >
                   {loading ? (
                     <>

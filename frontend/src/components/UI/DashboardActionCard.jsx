@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowSmUpIcon, ArrowSmDownIcon } from "@heroicons/react/solid"; // Pour les icônes de tendance
+import { ArrowSmUpIcon, ArrowSmDownIcon } from "@heroicons/react/24/outline"; // Pour les icônes de tendance
 
 const DashboardActionCard = ({
   icon: IconComponent, // L'icône sera un composant React (ex: PlusIcon, ChartBarIcon)

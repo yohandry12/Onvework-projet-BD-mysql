@@ -298,11 +298,7 @@ const Header = () => {
               <>
                 <div className="pt-4 mt-4 border-t border-gray-200 space-y-2">
                   <Link
-                    to={
-                      user.role === "candidate"
-                        ? "/dashboard"
-                        : "/client/dashboard"
-                    }
+                    to={user.role === "candidate" ? "/dashboard" : "/dashboard"}
                     className="flex items-center px-4 py-3 rounded-xl font-medium text-gray-700 hover:bg-gray-100 transition-all duration-200"
                   >
                     <svg
