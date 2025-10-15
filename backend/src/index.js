@@ -22,6 +22,7 @@ const userRoutes = require("./routes/users");
 const filesRouter = require("./routes/files");
 const testimonialRoutes = require("./routes/testimonials");
 const reportRoutes = require("./routes/reports");
+const adminRoutes = require("./routes/adminUser");
 
 // --- 🌍 CORS ---
 const allowedOrigins = [
@@ -86,8 +87,9 @@ app.use("/api/users", userRoutes(io));
 app.use("/api/files", filesRouter);
 app.use("/api/testimonials", testimonialRoutes(io));
 app.use("/api/reports", reportRoutes);
+app.use("/api/admin/users", adminRoutes); // Routes admin pour la gestion des utilisateurs
 // Sert les fichiers statiques du dossier 'uploads'
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // --- 🧩 WebSocket ---
 io.on("connection", (socket) => {

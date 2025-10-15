@@ -140,17 +140,20 @@ export const apiService = {
 
   // API des candidatures
   applications: {
-    create: (jobId, applicationData, config ) => {
+    create: (jobId, applicationData, config) => {
       // Le FormData est construit ici, à partir d'un objet simple.
       const formData = new FormData();
       formData.append("coverLetter", applicationData.coverLetter);
-      
-      if (applicationData.attachments && applicationData.attachments.length > 0) {
-        applicationData.attachments.forEach(file => {
+
+      if (
+        applicationData.attachments &&
+        applicationData.attachments.length > 0
+      ) {
+        applicationData.attachments.forEach((file) => {
           formData.append("attachments", file);
         });
       }
-      
+
       // Axios s'occupe du Content-Type automatiquement
       return apiClient.post(`/jobs/${jobId}/apply`, formData, config);
     },
@@ -175,6 +178,17 @@ export const apiService = {
       return apiClient.get(`/users/search?${params.toString()}`);
     },
     getProfile: (id) => apiClient.get(`/users/${id}/profile`),
+
+    // --- Fonctions pour l'Admin ---
+    adminGetAll: (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      // On s'assure d'appeler l'endpoint correct /users
+      return apiClient.get(`/admin/users?${query}`);
+    },
+    adminUpdateStatus: (id, isActive) =>
+      apiClient.patch(`/admin/users/${id}/status`, { isActive }),
+
+    adminDelete: (id) => apiClient.delete(`/admin/users/${id}`),
   },
 
   // API des notifications
