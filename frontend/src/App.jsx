@@ -35,6 +35,8 @@ import ManageReports from "./pages/admin/ManageReports";
 import ClientProfilePage from "./pages/ClientProfilePage";
 import SettingsPage from "./pages/SettingsPage";
 import ManageUsers from "./pages/admin/ManageUsers";
+import AdminRecommendations from "./pages/Admin/AdminRecommendations";
+import AdminUserDetails from "./pages/Admin/AdminUserDetails";
 // --- LAYOUTS ET COMPOSANTS ---
 import Header from "./components/Layout/Header";
 import Footer from "./components/Layout/Footer";
@@ -157,6 +159,8 @@ function AppRoutes() {
             <Route path="testimonials" element={<ManageTestimonials />} />
             <Route path="reports" element={<ManageReports />} />
             <Route path="users" element={<ManageUsers />} />
+            <Route path="recommandations" element={<AdminRecommendations />} />
+            <Route path="/admin/users/:id" element={<AdminUserDetails />} />
           </Route>
         </Route>
 

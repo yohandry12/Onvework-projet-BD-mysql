@@ -85,6 +85,92 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.post("/", async (req, res) => {
+  let t;
+  try {
+    const {
+      email,
+      password,
+      role,
+      firstName,
+      lastName,
+      company,
+      profession,
+      location,
+      sector,
+    } = req.body;
+
+    // --- Validation des données ---
+    if (!email || !password || !role || !firstName || !lastName) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Tous les champs sont requis." });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: "Le mot de passe doit faire au moins 8 caractères.",
+      });
+    }
+
+    const t = await sequelize.transaction();
+
+    // Créer l'utilisateur principal
+    const newUser = await User.create(
+      {
+        email: email.toLowerCase(),
+        password,
+        role,
+        isActive: true, // Un utilisateur créé par un admin est actif par défaut
+        emailVerified: true, // On peut considérer son email comme vérifié
+      },
+      { transaction: t }
+    );
+
+    // Créer le profil associé en fonction du rôle
+    if (role === "candidate") {
+      await CandidateProfile.create(
+        {
+          userId: newUser.id,
+          firstName,
+          lastName,
+          location,
+          profession,
+        },
+        { transaction: t }
+      );
+    } else if (role === "client") {
+      await ClientProfile.create(
+        {
+          userId: newUser.id,
+          firstName,
+          lastName,
+          location,
+          sector,
+          company: company || "Non spécifiée",
+        },
+        { transaction: t }
+      );
+    }
+
+    await t.commit();
+
+    res
+      .status(201)
+      .json({ success: true, message: "Utilisateur créé avec succès." });
+  } catch (error) {
+    await t?.rollback();
+    if (error.name === "SequelizeUniqueConstraintError") {
+      return res.status(400).json({
+        success: false,
+        error: "Cette adresse email est déjà utilisée.",
+      });
+    }
+    logger.error("Erreur création utilisateur (admin):", error);
+    res.status(500).json({ success: false, error: "Erreur serveur." });
+  }
+});
+
 // --- 2. PATCH /api/users/:id/status : Activer ou désactiver un utilisateur ---
 router.patch("/:id/status", async (req, res) => {
   try {
@@ -152,6 +238,46 @@ router.delete("/:id", async (req, res) => {
   } catch (error) {
     logger.error("Erreur lors de la suppression des utilisateurs:", error);
     res.status(500).json({ success: false, error: "Erreur serveur" });
+  }
+});
+
+// --- GET /api/users/:id : Récupérer les détails d'un utilisateur spécifique ---
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findByPk(id, {
+      attributes: ["id", "email", "role", "isActive", "createdAt", "lastLogin"],
+      include: [
+        {
+          model: CandidateProfile,
+          as: "candidateProfile",
+          // On prend tous les attributs du profil
+        },
+        {
+          model: ClientProfile,
+          as: "clientProfile",
+          // On prend tous les attributs du profil
+        },
+      ],
+    });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Utilisateur introuvable." });
+    }
+
+    // Formatter la réponse comme pour la liste, pour simplifier le front
+    const formattedUser = user.get({ plain: true });
+    formattedUser.profile =
+      formattedUser.candidateProfile || formattedUser.clientProfile;
+    delete formattedUser.candidateProfile;
+    delete formattedUser.clientProfile;
+
+    res.json({ success: true, user: formattedUser });
+  } catch (error) {
+    logger.error("Erreur récupération détail utilisateur (admin):", error);
+    res.status(500).json({ success: false, error: "Erreur serveur." });
   }
 });
 

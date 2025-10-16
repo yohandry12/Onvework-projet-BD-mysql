@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { apiService } from "../../services/api";
 import { useDebounce } from "use-debounce";
 import EditUserModal from "../../components/admin/EditUserModal";
+import AddUserSlideOver from "../../components/admin/AddUserSlideOver";
 
 // --- Icônes pour l'UI ---
 import {
@@ -26,6 +27,9 @@ const ManageUsers = () => {
   // --- NOUVEAUX ÉTATS POUR L'ÉDITION ---
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+
+  // --- 2. NOUVEL ÉTAT POUR GÉRER LE PANNEAU LATÉRAL ---
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
 
   // Filtres
   const [searchTerm, setSearchTerm] = useState("");
@@ -107,6 +111,12 @@ const ManageUsers = () => {
     fetchUsers();
   };
 
+  // 3. LA FONCTION 'onClose' DU PANNEAU RAFRAÎCHIT LA LISTE
+  const handleCloseAddUser = () => {
+    setIsAddUserOpen(false);
+    fetchUsers(); // On recharge les utilisateurs après l'ajout
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
@@ -118,7 +128,10 @@ const ManageUsers = () => {
             {pagination?.totalResults || 0} utilisateurs trouvés
           </p>
         </div>
-        <button className="mt-4 sm:mt-0 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700">
+        <button
+          className="mt-4 sm:mt-0 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700"
+          onClick={() => setIsAddUserOpen(true)}
+        >
           <UserPlusIcon className="w-5 h-5" />
           Ajouter un utilisateur
         </button>
@@ -268,6 +281,8 @@ const ManageUsers = () => {
       {isEditModalOpen && (
         <EditUserModal user={selectedUser} onClose={handleCloseEditModal} />
       )}
+      {/* 5. ON AFFICHE LE COMPOSANT DU PANNEAU LATÉRAL */}
+      <AddUserSlideOver isOpen={isAddUserOpen} onClose={handleCloseAddUser} />
     </div>
   );
 };

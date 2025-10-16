@@ -37,22 +37,22 @@ const Footer = () => {
                   to="/jobs"
                   className="text-gray-300 hover:text-white transition-colors"
                 >
-                  Offres d'emploi
+                  Trouver des missions
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/register"
+                  to="/talents"
                   className="text-gray-300 hover:text-white transition-colors"
                 >
-                  S'inscrire
+                  Nos Talents
                 </Link>
               </li>
             </ul>
           </div>
 
           {/* Pour les candidats */}
-          <div>
+          {/* <div>
             <h3 className="font-semibold mb-4">Candidats</h3>
             <ul className="space-y-2 text-sm">
               <li>
@@ -80,10 +80,10 @@ const Footer = () => {
                 </a>
               </li>
             </ul>
-          </div>
+          </div> */}
 
           {/* Pour les clients */}
-          <div>
+          {/* <div>
             <h3 className="font-semibold mb-4">Clients</h3>
             <ul className="space-y-2 text-sm">
               <li>
@@ -111,7 +111,7 @@ const Footer = () => {
                 </a>
               </li>
             </ul>
-          </div>
+          </div> */}
         </div>
 
         {/* Barre du bas */}

@@ -15,6 +15,7 @@ import {
   CheckBadgeIcon,
   UserIcon,
   LinkIcon,
+  TagIcon,
 } from "@heroicons/react/24/outline";
 
 // --- Composants d'aide pour le style ---
@@ -271,13 +272,19 @@ const ClientProfile = ({
               value={formData.profile.website}
               onChange={handleProfileChange}
             />
+            <InputRow
+              label="Secteur d'activité"
+              name="sector"
+              value={formData.profile.sector}
+              onChange={handleProfileChange}
+            />
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Type d'employeur
               </label>
               <select
                 name="employerType"
-                value={formData.employerType}
+                value={formData.profile.employerType}
                 onChange={handleEmployerTypeChange}
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
               >
@@ -305,6 +312,11 @@ const ClientProfile = ({
               icon={<GlobeAltIcon />}
               label="Site Web"
               value={user.profile.website}
+            />
+            <InfoRow
+              icon={<TagIcon />}
+              label="Secteur d'activité "
+              value={user.profile.sector}
             />
           </>
         )}
@@ -359,8 +371,9 @@ const ProfilePage = () => {
           diplomas: user.profile.diplomas || [],
           company: user.profile.company || "",
           commercialName: user.profile.commercialName || "",
+          sector: user.profile.sector || "",
+          employerType: user.employerType || "",
         },
-        employerType: user.employerType || "",
       });
     }
   }, [user]);
@@ -429,7 +442,10 @@ const ProfilePage = () => {
   };
 
   const handleEmployerTypeChange = (e) => {
-    setFormData((prev) => ({ ...prev, employerType: e.target.value }));
+    setFormData((prev) => ({
+      ...prev,
+      profile: { ...prev.profile, employerType: e.target.value },
+    }));
   };
 
   const handleSaveChanges = async (e) => {
@@ -444,8 +460,6 @@ const ProfilePage = () => {
           // Filtrer les diplômes vides avant l'envoi
           diplomas: formData.profile.diplomas.filter((d) => d.type),
         },
-        employerType:
-          user.role === "client" ? formData.employerType : undefined,
       };
       await apiService.auth.updateProfile(updates);
       await refreshUser(); // Rafraîchir les données utilisateur depuis le serveur

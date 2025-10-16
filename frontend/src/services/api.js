@@ -189,6 +189,8 @@ export const apiService = {
       apiClient.patch(`/admin/users/${id}/status`, { isActive }),
 
     adminDelete: (id) => apiClient.delete(`/admin/users/${id}`),
+    adminCreate: (userData) => apiClient.post("/admin/users", userData),
+    adminGetUserById: (id) => apiClient.get(`/admin/users/${id}`),
   },
 
   // API des notifications
@@ -216,6 +218,13 @@ export const apiService = {
     getAllForAdmin: () => apiService.get("/reports"),
     updateStatus: (id, status) =>
       apiService.patch(`/reports/${id}`, { status }),
+  },
+
+  recommendations: {
+    getAllForAdmin: (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return apiClient.get(`/recommendations/admin?${query}`);
+    },
   },
 };
 

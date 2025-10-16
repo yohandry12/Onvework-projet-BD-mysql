@@ -12,6 +12,7 @@ import {
   StarIcon,
   ChartBarIcon,
   BellIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 
 const AdminDashboard = () => {
@@ -140,11 +141,11 @@ const AdminDashboard = () => {
               <span>Gérer les témoignages</span>
             </Link>
             <Link
-              to="/admin/analytics"
+              to="/admin/recommandations"
               className="flex items-center p-4 border-2 border-dashed rounded-lg hover:border-purple-400 hover:bg-purple-50"
             >
-              <ChartBarIcon className="h-6 w-6 text-purple-500 mr-3" />
-              <span>Analytics</span>
+              <SparklesIcon className="h-6 w-6 text-purple-500 mr-3" />
+              <span>Timeline des Succès</span>
             </Link>
             <Link
               to="/admin/reports"
