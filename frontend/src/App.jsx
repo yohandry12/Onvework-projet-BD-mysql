@@ -43,6 +43,7 @@ import Footer from "./components/Layout/Footer";
 import LoadingSpinner from "./components/UI/LoadingSpinner";
 import AdminLayout from "./components/Layout/AdminLayout";
 import OfflineBanner from "./components/UI/OfflineBanner";
+import { useTheme } from "./hooks/useTheme";
 
 // --- ProtectedRoute (Final) ---
 const ProtectedRoute = ({ allowedRoles }) => {
@@ -73,7 +74,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
 
 // --- Layout pour les pages publiques ET les utilisateurs connectés ---
 const MainLayout = () => (
-  <div className="min-h-screen bg-gray-50 flex flex-col">
+  <div className="min-h-screen bg-gray-50 flex flex-col dark:bg-gray-900">
     <Header />
     <main className="flex-grow">
       <Outlet />
@@ -174,6 +175,7 @@ function AppRoutes() {
 
 function App() {
   const queryClient = new QueryClient();
+  useTheme();
   return (
     <QueryClientProvider client={queryClient}>
       <Router>

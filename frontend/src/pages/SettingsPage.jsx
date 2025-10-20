@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { motion } from "framer-motion";
 import {
   Cog6ToothIcon,
   UserIcon,
@@ -12,15 +14,210 @@ import {
   CreditCardIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import apiService from "../services/api";
+import { useTheme } from "../hooks/useTheme";
+
+const NotificationToggle = ({ label, description, isChecked, onChange }) => (
+  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+    <div>
+      <h4 className="font-medium text-gray-900">{label}</h4>
+      <p className="text-sm text-gray-600">{description}</p>
+    </div>
+    <label className="relative inline-flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        checked={isChecked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only peer"
+      />
+      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+    </label>
+  </div>
+);
 
 const SettingsPage = () => {
+  const { user, refreshUser } = useAuth();
   const [activeSection, setActiveSection] = useState("compte");
-  const [theme, setTheme] = useState("light");
-  const [notifications, setNotifications] = useState({
-    email: true,
-    push: false,
-    sms: false,
+
+  // --- États pour les données et la UI ---
+  const [settings, setSettings] = useState(null);
+  const [accountForm, setAccountForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    profession: "",
   });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [feedback, setFeedback] = useState({ error: null, success: null });
+  const [isPasswordFormVisible, setIsPasswordFormVisible] = useState(false);
+  const [theme, setTheme] = useTheme();
+
+  const loadInitialData = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const settingsResponse = await apiService.settings.get();
+      if (settingsResponse.success) {
+        setSettings(settingsResponse.settings);
+      }
+
+      if (settingsResponse.settings.theme) {
+        setTheme(settingsResponse.settings.theme);
+      }
+
+      setAccountForm({
+        firstName: user.profile?.firstName || "",
+        lastName: user.profile?.lastName || "",
+        email: user.email || "",
+        phone: user.profile?.phone || "",
+        profession: user.profile?.profession || "",
+      });
+    } catch (error) {
+      console.error("Erreur chargement des paramètres:", error);
+      setFeedback({
+        error: "Impossible de charger vos données.",
+        success: null,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  // --- Gestion des changements ---
+  const handleSettingsChange = (key, value) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleAccountChange = (e) => {
+    const { name, value } = e.target;
+    setAccountForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // --- Logique de sauvegarde ---
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    setFeedback({ error: null, success: null });
+
+    try {
+      // Mettre à jour les informations du profil via la route existante
+      const profileUpdates = {
+        firstName: accountForm.firstName,
+        lastName: accountForm.lastName,
+        phone: accountForm.phone,
+        profession: accountForm.profession,
+      };
+      await apiService.auth.updateProfile({ profile: profileUpdates });
+
+      // Mettre à jour les paramètres
+      await apiService.settings.update(settings);
+
+      await refreshUser(); // Mettre à jour le contexte Auth
+      setFeedback({
+        success: "Paramètres enregistrés avec succès !",
+        error: null,
+      });
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error || "Erreur lors de la sauvegarde.";
+      setFeedback({ error: errorMessage, success: null });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setFeedback({
+        error: "Les nouveaux mots de passe ne correspondent pas.",
+        success: null,
+      });
+      return;
+    }
+    setIsSaving(true);
+    setFeedback({ error: null, success: null });
+    try {
+      await apiService.auth.changePassword(
+        passwordForm.currentPassword,
+        passwordForm.newPassword
+      );
+      setFeedback({
+        success: "Mot de passe changé avec succès !",
+        error: null,
+      });
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      setFeedback({
+        error:
+          error.response?.data?.error ||
+          "Erreur lors du changement de mot de passe.",
+        success: null,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelPasswordChange = () => {
+    setIsPasswordFormVisible(false);
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+  };
+
+  const handleCancel = () => {
+    // Recharger les données initiales pour annuler les changements non sauvegardés
+    loadInitialData();
+  };
+
+  const handleDeleteAccount = async () => {
+    // Étape de confirmation cruciale
+    const isConfirmed = window.confirm(
+      "Êtes-vous absolument sûr ?\n\nCette action est irréversible et supprimera définitivement votre compte et toutes vos données associées."
+    );
+
+    if (isConfirmed) {
+      setIsSaving(true); // On peut réutiliser cet état pour montrer un chargement
+      setFeedback({ error: null, success: null });
+      try {
+        await apiService.auth.deleteAccount();
+        // Si la suppression réussit, on déconnecte l'utilisateur.
+        // Le contexte Auth se chargera de la redirection vers la page de connexion.
+        logout();
+      } catch (error) {
+        setFeedback({
+          error:
+            "Une erreur est survenue lors de la suppression de votre compte.",
+          success: null,
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
 
   const sections = [
     { id: "compte", label: "Compte", icon: UserIcon },
@@ -30,10 +227,18 @@ const SettingsPage = () => {
     {
       id: "apparence",
       label: "Apparence",
-      icon: theme === "light" ? SunIcon : MoonIcon,
+      icon: settings?.theme === "dark" ? MoonIcon : SunIcon,
     },
     { id: "langue", label: "Langue", icon: LanguageIcon },
   ];
+
+  if (loading || !settings) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p>Chargement des paramètres...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/30">
@@ -49,16 +254,43 @@ const SettingsPage = () => {
                 </p>
               </div>
               <div className="flex items-center space-x-3">
-                <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <button
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  onClick={handleCancel}
+                >
                   Annuler
                 </button>
-                <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-                  Enregistrer
+                <button
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                  onClick={handleSaveChanges}
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Enregistrement..." : "Enregistrer"}
                 </button>
               </div>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Feedback Messages */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        {feedback.success && (
+          <div
+            className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md"
+            role="alert"
+          >
+            <p>{feedback.success}</p>
+          </div>
+        )}
+        {feedback.error && (
+          <div
+            className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md"
+            role="alert"
+          >
+            <p>{feedback.error}</p>
+          </div>
+        )}
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -88,16 +320,16 @@ const SettingsPage = () => {
 
           {/* Contenu principal */}
           <div className="flex-1">
-            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden dark:bg-gray-800 dark:border-gray-700">
               {/* Section Compte */}
               {activeSection === "compte" && (
                 <div className="p-6 space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">
+                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                         Informations du compte
                       </h2>
-                      <p className="text-gray-600 text-sm mt-1">
+                      <p className="text-gray-600 text-sm mt-1 dark:text-gray-400">
                         Gérez vos informations personnelles
                       </p>
                     </div>
@@ -106,12 +338,28 @@ const SettingsPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nom complet
+                        Prénom
                       </label>
                       <input
+                        name="firstName"
                         type="text"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        placeholder="Votre nom complet"
+                        value={accountForm.firstName}
+                        onChange={handleAccountChange}
+                        disabled
+                        className="w-full input input-bordered"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nom
+                      </label>
+                      <input
+                        name="lastName"
+                        type="text"
+                        value={accountForm.lastName}
+                        onChange={handleAccountChange}
+                        disabled
+                        className="w-full input input-bordered"
                       />
                     </div>
                     <div>
@@ -120,6 +368,8 @@ const SettingsPage = () => {
                       </label>
                       <input
                         type="email"
+                        value={accountForm.email}
+                        disabled
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         placeholder="votre@email.com"
                       />
@@ -130,16 +380,22 @@ const SettingsPage = () => {
                       </label>
                       <input
                         type="tel"
+                        value={accountForm.phone}
+                        onChange={handleAccountChange}
+                        disabled
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         placeholder="+33 1 23 45 67 89"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Poste
+                        Profession
                       </label>
                       <input
                         type="text"
+                        value={accountForm.profession}
+                        onChange={handleAccountChange}
+                        disabled
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         placeholder="Votre poste"
                       />
@@ -175,56 +431,96 @@ const SettingsPage = () => {
                       Préférences de notifications
                     </h2>
                     <p className="text-gray-600 text-sm mt-1">
-                      Contrôlez comment et quand vous recevez des notifications
+                      Contrôlez comment et quand vous recevez des notifications.
                     </p>
                   </div>
 
-                  <div className="space-y-4">
-                    {[
-                      {
-                        id: "email",
-                        label: "Email",
-                        description: "Recevoir des notifications par email",
-                      },
-                      {
-                        id: "push",
-                        label: "Notifications push",
-                        description: "Notifications sur votre appareil",
-                      },
-                      {
-                        id: "sms",
-                        label: "SMS",
-                        description: "Recevoir des alertes par SMS",
-                      },
-                    ].map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                      >
-                        <div>
-                          <h3 className="font-medium text-gray-900">
-                            {item.label}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {item.description}
-                          </p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={notifications[item.id]}
-                            onChange={(e) =>
-                              setNotifications((prev) => ({
-                                ...prev,
-                                [item.id]: e.target.checked,
-                              }))
-                            }
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-                    ))}
+                  {/* Section pour les emails */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-800 border-b pb-2 mb-4">
+                      Par Email
+                    </h3>
+                    <div className="space-y-4">
+                      <NotificationToggle
+                        label="Nouveaux messages"
+                        description="Lorsqu'un utilisateur vous envoie un message direct."
+                        isChecked={settings.notifications.email.newMessages}
+                        onChange={(isChecked) =>
+                          handleSettingsChange("notifications", {
+                            ...settings.notifications,
+                            email: {
+                              ...settings.notifications.email,
+                              newMessages: isChecked,
+                            },
+                          })
+                        }
+                      />
+                      <NotificationToggle
+                        label="Mises à jour des missions"
+                        description="Nouvelles candidatures, changements de statut, etc."
+                        isChecked={settings.notifications.email.jobUpdates}
+                        onChange={(isChecked) =>
+                          handleSettingsChange("notifications", {
+                            ...settings.notifications,
+                            email: {
+                              ...settings.notifications.email,
+                              jobUpdates: isChecked,
+                            },
+                          })
+                        }
+                      />
+                      <NotificationToggle
+                        label="Actualités de la plateforme"
+                        description="Nouveautés, offres spéciales et mises à jour du produit."
+                        isChecked={settings.notifications.email.platformNews}
+                        onChange={(isChecked) =>
+                          handleSettingsChange("notifications", {
+                            ...settings.notifications,
+                            email: {
+                              ...settings.notifications.email,
+                              platformNews: isChecked,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Section pour les notifications push */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-800 border-b pb-2 mb-4">
+                      Notifications Push
+                    </h3>
+                    <div className="space-y-4">
+                      <NotificationToggle
+                        label="Nouveaux messages"
+                        description="Recevez une alerte push pour les messages instantanés."
+                        isChecked={settings.notifications.push.newMessages}
+                        onChange={(isChecked) =>
+                          handleSettingsChange("notifications", {
+                            ...settings.notifications,
+                            push: {
+                              ...settings.notifications.push,
+                              newMessages: isChecked,
+                            },
+                          })
+                        }
+                      />
+                      <NotificationToggle
+                        label="Mises à jour des missions"
+                        description="Alertes pour les événements importants liés à vos missions."
+                        isChecked={settings.notifications.push.jobUpdates}
+                        onChange={(isChecked) =>
+                          handleSettingsChange("notifications", {
+                            ...settings.notifications,
+                            push: {
+                              ...settings.notifications.push,
+                              jobUpdates: isChecked,
+                            },
+                          })
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -259,7 +555,10 @@ const SettingsPage = () => {
                         return (
                           <button
                             key={themeOption.id}
-                            onClick={() => setTheme(themeOption.id)}
+                            onClick={() => {
+                              setTheme(themeOption.id);
+                              handleSettingsChange("theme", themeOption.id);
+                            }}
                             className={`p-4 border-2 rounded-xl text-left transition-all duration-200 ${
                               theme === themeOption.id
                                 ? "border-blue-500 bg-blue-50"
@@ -315,21 +614,90 @@ const SettingsPage = () => {
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <CreditCardIcon className="w-6 h-6 text-gray-600" />
-                        <div>
-                          <h3 className="font-medium text-gray-900">
-                            Changer le mot de passe
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            Mettez à jour votre mot de passe régulièrement
-                          </p>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      {!isPasswordFormVisible ? (
+                        // --- Vue par défaut (cachée) ---
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <CreditCardIcon className="w-6 h-6 text-gray-600" />
+                            <div>
+                              <h3 className="font-medium text-gray-900">
+                                Changer le mot de passe
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                Mettez à jour votre mot de passe régulièrement
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setIsPasswordFormVisible(true)}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            Modifier
+                          </button>
                         </div>
-                      </div>
-                      <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        Modifier
-                      </button>
+                      ) : (
+                        // --- Vue formulaire (visible) ---
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <h3 className="font-medium text-gray-900 mb-4">
+                            Mettre à jour votre mot de passe
+                          </h3>
+                          <form
+                            onSubmit={handleChangePassword}
+                            className="space-y-4"
+                          >
+                            <input
+                              name="currentPassword"
+                              type="password"
+                              placeholder="Mot de passe actuel"
+                              value={passwordForm.currentPassword}
+                              onChange={handlePasswordChange}
+                              className="w-full input input-bordered"
+                              required
+                            />
+                            <input
+                              name="newPassword"
+                              type="password"
+                              placeholder="Nouveau mot de passe"
+                              value={passwordForm.newPassword}
+                              onChange={handlePasswordChange}
+                              className="w-full input input-bordered"
+                              required
+                            />
+                            <input
+                              name="confirmPassword"
+                              type="password"
+                              placeholder="Confirmer le nouveau mot de passe"
+                              value={passwordForm.confirmPassword}
+                              onChange={handlePasswordChange}
+                              className="w-full input input-bordered"
+                              required
+                            />
+                            <div className="flex justify-end space-x-3 pt-2">
+                              <button
+                                type="button"
+                                onClick={handleCancelPasswordChange}
+                                className="btn btn-ghost"
+                              >
+                                Annuler
+                              </button>
+                              <button
+                                type="submit"
+                                disabled={isSaving}
+                                className="btn btn-primary"
+                              >
+                                {isSaving
+                                  ? "Modification..."
+                                  : "Changer le mot de passe"}
+                              </button>
+                            </div>
+                          </form>
+                        </motion.div>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
@@ -344,7 +712,11 @@ const SettingsPage = () => {
                           </p>
                         </div>
                       </div>
-                      <button className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
+                      <button
+                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                        onClick={handleDeleteAccount}
+                        disabled={isSaving}
+                      >
                         Supprimer
                       </button>
                     </div>

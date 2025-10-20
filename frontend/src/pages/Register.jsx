@@ -703,7 +703,10 @@ const Register = () => {
         email: formData.email,
         password: formData.password,
         role: "client",
-        company: formData.company,
+        company:
+          formData.company ||
+          formData.commercialName ||
+          formData.associationName,
         employerType: formData.employerType,
         sector: formData.sector,
         phone: formData.phone,

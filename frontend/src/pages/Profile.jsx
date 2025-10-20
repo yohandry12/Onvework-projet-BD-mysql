@@ -372,7 +372,7 @@ const ProfilePage = () => {
           company: user.profile.company || "",
           commercialName: user.profile.commercialName || "",
           sector: user.profile.sector || "",
-          employerType: user.employerType || "",
+          employerType: user.profile.employerType || "",
         },
       });
     }
@@ -481,7 +481,6 @@ const ProfilePage = () => {
     if (user) {
       setFormData({
         profile: { ...user.profile },
-        employerType: user.employerType,
       });
     }
   };

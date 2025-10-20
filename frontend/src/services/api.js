@@ -105,6 +105,7 @@ export const apiService = {
     updateProfile: (updates) => apiClient.put("/auth/profile", updates),
     changePassword: (currentPassword, newPassword) =>
       apiClient.post("/auth/change-password", { currentPassword, newPassword }),
+    deleteAccount: () => apiClient.delete("/auth/delete-account"),
   },
 
   // API des emplois
@@ -225,6 +226,11 @@ export const apiService = {
       const query = new URLSearchParams(params).toString();
       return apiClient.get(`/recommendations/admin?${query}`);
     },
+  },
+
+  settings: {
+    get: () => apiService.get("/settings"),
+    update: (settingsData) => apiService.put("/settings", settingsData),
   },
 };
 
