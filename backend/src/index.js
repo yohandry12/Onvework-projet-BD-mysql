@@ -95,7 +95,7 @@ app.use("/api/admin/users", adminRoutes); // Routes admin pour la gestion des ut
 app.use("/api/recommendations/admin", recommendationAdminRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/activities", activitiesRoutesFactory(io));
-app.use("/api/admin/jobs", adminJobRoutes);
+app.use("/api/admin/jobs", adminJobRoutes(io));
 // Sert les fichiers statiques du dossier 'uploads'
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 

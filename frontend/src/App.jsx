@@ -38,6 +38,7 @@ import SettingsPage from "./pages/SettingsPage";
 import ManageUsers from "./pages/admin/ManageUsers";
 import AdminRecommendations from "./pages/Admin/AdminRecommendations";
 import AdminUserDetails from "./pages/Admin/AdminUserDetails";
+import Unauthorized from "./pages/Unauthorized";
 // --- LAYOUTS ET COMPOSANTS ---
 import Header from "./components/Layout/Header";
 import Footer from "./components/Layout/Footer";
@@ -168,7 +169,7 @@ function AppRoutes() {
         </Route>
 
         {/* --- PAGES D'ERREUR --- */}
-        <Route path="/unauthorized" element={<h1>Accès Refusé</h1>} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="*" element={<h1>404 - Page Non Trouvée</h1>} />
       </Routes>
     </>
