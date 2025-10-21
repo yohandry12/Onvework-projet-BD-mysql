@@ -108,7 +108,7 @@ module.exports = (sequelize) => {
           "interview",
           "reported"
         ),
-        defaultValue: "published",
+        defaultValue: "pending",
       },
       isFrozen: {
         type: DataTypes.BOOLEAN,

@@ -3,6 +3,7 @@ const {
   Job,
   User,
   Application,
+  Activity,
   sequelize,
   CandidateProfile,
   ClientProfile,
@@ -159,22 +160,36 @@ module.exports = function (io) {
         io.emit("new-job-posted", newJob);
 
         // Créer une activité pour le client
-        await router.createActivity({
-          userId: clientUser.id,
-          type: "job",
-          message: `Vous avez publié une nouvelle mission : ${title}`,
-          referenceId: newJob.id,
-          referenceType: "job",
-          status: "new",
-        });
+        try {
+          const activity = await Activity.create({
+            userId: clientUser.id,
+            type: "job",
+            message: `Vous avez publié une nouvelle mission : ${title}`,
+            referenceId: newJob.id,
+            referenceType: "job",
+            status: "new",
+          });
+          io.to(`user-${clientUser.id}`).emit("activity", activity);
+        } catch (err) {
+          logger.warn(
+            "Impossible de créer l'activité de publication :",
+            err.message || err
+          );
+        }
 
         res.status(201).json({ success: true, job: newJob });
       } catch (error) {
-        if (error instanceof sequelize.ValidationError) {
-          return res.status(400).json({
-            success: false,
-            error: error.errors.map((e) => e.message).join(", "),
-          });
+        // Sécurité : éviter d'utiliser instanceof sur une valeur qui peut être undefined
+        if (
+          error &&
+          (error.name === "SequelizeValidationError" ||
+            error.name === "ValidationError" ||
+            Array.isArray(error.errors))
+        ) {
+          const msg = Array.isArray(error.errors)
+            ? error.errors.map((e) => e.message).join(", ")
+            : error.message || "Erreur de validation";
+          return res.status(400).json({ success: false, error: msg });
         }
         logger.error("Erreur création mission:", error);
         res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -633,24 +648,40 @@ module.exports = function (io) {
         });
 
         // Créer une activité pour le candidat
-        await router.createActivity({
-          userId: candidateId,
-          type: "application",
-          message: `Vous avez postulé à la mission : ${job.title}`,
-          referenceId: jobId,
-          referenceType: "job",
-          status: "pending",
-        });
+        try {
+          const actCandidate = await Activity.create({
+            userId: candidateId,
+            type: "application",
+            message: `Vous avez postulé à la mission : ${job.title}`,
+            referenceId: jobId,
+            referenceType: "job",
+            status: "pending",
+          });
+          io.to(`user-${candidateId}`).emit("activity", actCandidate);
+        } catch (err) {
+          logger.warn(
+            "Impossible de créer l'activité candidat :",
+            err.message || err
+          );
+        }
 
         // Créer une activité pour le client
-        await router.createActivity({
-          userId: job.clientId,
-          type: "application",
-          message: `Nouvelle candidature reçue pour la mission : ${job.title}`,
-          referenceId: jobId,
-          referenceType: "job",
-          status: "new",
-        });
+        try {
+          const actClient = await Activity.create({
+            userId: job.clientId,
+            type: "application",
+            message: `Nouvelle candidature reçue pour la mission : ${job.title}`,
+            referenceId: jobId,
+            referenceType: "job",
+            status: "new",
+          });
+          io.to(`user-${job.clientId}`).emit("activity", actClient);
+        } catch (err) {
+          logger.warn(
+            "Impossible de créer l'activité client :",
+            err.message || err
+          );
+        }
 
         console.log("[Route /apply] Candidature traitée avec succès.");
         res.status(201).json({
@@ -786,23 +817,39 @@ module.exports = function (io) {
 
         // Créer une activité selon le nouveau statut
         if (status === "filled") {
-          await router.createActivity({
-            userId: updatedJob.clientId,
-            type: "job",
-            message: `La mission "${updatedJob.title}" est maintenant terminée`,
-            referenceId: id,
-            referenceType: "job",
-            status: "info",
-          });
+          try {
+            const act = await Activity.create({
+              userId: updatedJob.clientId,
+              type: "job",
+              message: `La mission "${updatedJob.title}" est maintenant terminée`,
+              referenceId: id,
+              referenceType: "job",
+              status: "info",
+            });
+            io.to(`user-${updatedJob.clientId}`).emit("activity", act);
+          } catch (err) {
+            logger.warn(
+              "Impossible de créer l'activité filled :",
+              err.message || err
+            );
+          }
         } else if (status === "closed") {
-          await router.createActivity({
-            userId: updatedJob.clientId,
-            type: "job",
-            message: `La mission "${updatedJob.title}" a été fermée`,
-            referenceId: id,
-            referenceType: "job",
-            status: "info",
-          });
+          try {
+            const act = await Activity.create({
+              userId: updatedJob.clientId,
+              type: "job",
+              message: `La mission "${updatedJob.title}" a été fermée`,
+              referenceId: id,
+              referenceType: "job",
+              status: "info",
+            });
+            io.to(`user-${updatedJob.clientId}`).emit("activity", act);
+          } catch (err) {
+            logger.warn(
+              "Impossible de créer l'activité closed :",
+              err.message || err
+            );
+          }
         }
 
         res.json({ success: true, job: updatedJob });
@@ -884,14 +931,22 @@ module.exports = function (io) {
         await t.commit();
 
         // Créer une activité pour l'employé
-        await router.createActivity({
-          userId: employeeId,
-          type: "recommendation",
-          message: `Vous avez reçu une recommandation et obtenu le badge ${newBadge}!`,
-          referenceId: jobId,
-          referenceType: "job",
-          status: "new",
-        });
+        try {
+          const act = await Activity.create({
+            userId: employeeId,
+            type: "recommendation",
+            message: `Vous avez reçu une recommandation et obtenu le badge ${newBadge}!`,
+            referenceId: jobId,
+            referenceType: "job",
+            status: "new",
+          });
+          io.to(`user-${employeeId}`).emit("activity", act);
+        } catch (err) {
+          logger.warn(
+            "Impossible de créer l'activité recommandation :",
+            err.message || err
+          );
+        }
 
         res.status(201).json({
           success: true,

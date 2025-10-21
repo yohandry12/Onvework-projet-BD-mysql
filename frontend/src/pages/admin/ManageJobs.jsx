@@ -21,6 +21,11 @@ const STATUS_BADGES = {
     icon: ClockIcon,
     label: "Brouillon",
   },
+  pending: {
+    color: "bg-indigo-100 text-indigo-800",
+    icon: ClockIcon,
+    label: "En attente",
+  },
   published: {
     color: "bg-green-100 text-green-800",
     icon: CheckCircleIcon,
@@ -36,11 +41,17 @@ const STATUS_BADGES = {
     icon: ExclamationTriangleIcon,
     label: "Signalé",
   },
-  // Statut par défaut
+
   filled: {
     color: "bg-gray-100 text-gray-800",
     icon: BriefcaseIcon,
     label: "terminé",
+  },
+  // Fallback si statut inconnu
+  default: {
+    color: "bg-gray-100 text-gray-800",
+    icon: BriefcaseIcon,
+    label: "Inconnu",
   },
 };
 
@@ -78,6 +89,17 @@ const ManageJobs = () => {
       fetchJobs();
     } catch (error) {
       toast.error("Erreur lors du dégel de l'offre d'emploi");
+    }
+  };
+
+  const handleApprove = async (jobId) => {
+    if (!window.confirm("Valider cette offre et la publier ?")) return;
+    try {
+      await apiService.jobs.adminApprove(jobId);
+      toast.success("Offre validée et publiée avec succès");
+      fetchJobs();
+    } catch (error) {
+      toast.error("Erreur lors de l'approbation de l'offre");
     }
   };
 
@@ -120,13 +142,14 @@ const ManageJobs = () => {
             >
               <option value="">Tous les statuts</option>
               <option value="draft">Brouillons</option>
+              <option value="pending">En attente</option>
               <option value="published">Publiés</option>
-              <option value="filled">Remplies</option>
+              <option value="filled">Terminée</option>
               <option value="reported">Signalés</option>
             </select>
           </div>
 
-          <div className="flex items-center bg-white px-4 py-2 rounded-lg shadow-sm">
+          {/* <div className="flex items-center bg-white px-4 py-2 rounded-lg shadow-sm">
             <ExclamationTriangleIcon className="h-5 w-5 text-gray-400 mr-2" />
             <select
               className="border-0 bg-transparent focus:ring-0 text-sm"
@@ -139,7 +162,7 @@ const ManageJobs = () => {
               <option value="true">Gelés</option>
               <option value="false">Actifs</option>
             </select>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -218,10 +241,16 @@ const ManageJobs = () => {
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             job.isFrozen
                               ? "bg-red-100 text-red-800"
+                              : job.status === "pending"
+                              ? "bg-indigo-100 text-indigo-800"
                               : "bg-green-100 text-green-800"
                           }`}
                         >
-                          {job.isFrozen ? "Gelé" : "Actif"}
+                          {job.isFrozen
+                            ? "Gelé"
+                            : job.status === "pending"
+                            ? "En attente"
+                            : "Actif"}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right text-sm font-medium space-x-3">
@@ -241,6 +270,15 @@ const ManageJobs = () => {
                             title="Dégeler l'offre"
                           >
                             <ArrowPathIcon className="h-5 w-5" />
+                          </button>
+                        )}
+                        {job.status === "pending" && (
+                          <button
+                            onClick={() => handleApprove(job.id)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                            title="Valider l'offre"
+                          >
+                            <CheckCircleIcon className="h-5 w-5" />
                           </button>
                         )}
                         <button

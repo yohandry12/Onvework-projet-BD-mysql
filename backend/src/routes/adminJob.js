@@ -1,7 +1,8 @@
 const express = require("express");
-const { Job } = require("../models");
+const { Job, Activity } = require("../models");
 const { authenticateToken, requireRole } = require("../middleware/auth");
 const { Op } = require("sequelize");
+const { logger } = require("../utils/logger");
 
 const router = express.Router();
 router.use(authenticateToken, requireRole("admin"));
@@ -41,6 +42,42 @@ router.patch("/:id/unfreeze", async (req, res) => {
   await job.save();
 
   res.json({ success: true, job });
+});
+
+// PATCH /api/admin/jobs/:id/approve - Valider une offre (pending -> published)
+router.patch("/:id/approve", async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id);
+    if (!job)
+      return res.status(404).json({ success: false, error: "Job non trouvé." });
+
+    if (job.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        error: "Seules les offres en attente peuvent être approuvées.",
+      });
+    }
+
+    job.status = "published";
+    await job.save();
+
+    // notifier le client
+    const activity = await Activity.create({
+      userId: job.clientId,
+      type: "job-approved",
+      message: `Votre mission "${job.title}" a été approuvée et publiée.`,
+      referenceId: job.id,
+      referenceType: "job",
+      status: "new",
+    });
+    req.app.get("io").to(`user-${job.clientId}`).emit("activity", activity);
+    // activité créée ci-dessus et émise via socket
+
+    res.json({ success: true, job });
+  } catch (error) {
+    console.error("Erreur approbation job:", error);
+    res.status(500).json({ success: false, error: "Erreur serveur" });
+  }
 });
 
 // DELETE /api/admin/jobs/:id - Supprimer un job

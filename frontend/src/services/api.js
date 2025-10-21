@@ -140,6 +140,7 @@ export const apiService = {
     adminGetAll: (params) => apiClient.get("/admin/jobs", { params }),
     adminDelete: (id) => apiClient.delete(`/admin/jobs/${id}`),
     adminUnfreeze: (id) => apiClient.patch(`/admin/jobs/${id}/unfreeze`),
+    adminApprove: (id) => apiClient.patch(`/admin/jobs/${id}/approve`),
   },
 
   // API des candidatures

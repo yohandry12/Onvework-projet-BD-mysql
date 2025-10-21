@@ -228,9 +228,11 @@ const CreateJob = () => {
 
     try {
       await apiService.jobs.create(jobData);
-      setSuccess("Mission publiée avec succès ! Redirection...");
+      setSuccess(
+        "Votre mission a été créée et sera analysée par notre équipe."
+      );
       setTimeout(() => {
-        navigate("/jobs");
+        navigate("/dashboard");
       }, 1500);
     } catch (err) {
       const errorMsg =

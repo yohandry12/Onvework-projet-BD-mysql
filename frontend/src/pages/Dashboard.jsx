@@ -17,6 +17,8 @@ import {
   ArrowTrendingUpIcon,
   CalendarIcon,
   MapPinIcon,
+  CheckIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 import { Award } from "lucide-react";
 import Modal from "../components/UI/Modal";
