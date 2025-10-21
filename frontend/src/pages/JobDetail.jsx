@@ -95,6 +95,7 @@ const JobDetail = () => {
   // --- Données préparées après le chargement ---
   const isCompleted = job.status === "filled";
   const isRepublished = !!job.clonedFromId;
+  const isFrozen = job.isFrozen;
   const clientName =
     job.client?.company ||
     `${job.client?.firstName || ""} ${job.client?.lastName || ""}`.trim() ||
@@ -169,6 +170,12 @@ const JobDetail = () => {
                 {isCompleted && (
                   <span className="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">
                     Terminée
+                  </span>
+                )}
+
+                {isFrozen && (
+                  <span className="flex items-center bg-red-100 text-red-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                    Signalé
                   </span>
                 )}
               </div>
@@ -287,10 +294,14 @@ const JobDetail = () => {
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => setActiveApply(true)}
-                    disabled={isCompleted}
+                    disabled={isCompleted || isFrozen}
                     className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-indigo-700"
                   >
-                    {isCompleted ? "Mission terminée" : "Postuler"}
+                    {isCompleted
+                      ? "Mission terminée"
+                      : isFrozen
+                      ? "Suspendu"
+                      : "Postuler"}
                   </button>
                   {job.client && (
                     <Link

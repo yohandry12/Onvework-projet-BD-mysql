@@ -457,7 +457,7 @@ export default function ManageApplications() {
                             handleMarkAsCompleted(job.id, candidate.id)
                           }
                           disabled={isMissionFinished}
-                          className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 text-sm font-medium"
+                          className="flex items-center gap-2 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-gray-800 text-sm font-medium"
                         >
                           <CheckCircleLucide className="w-4 h-4" /> Terminer
                         </button>

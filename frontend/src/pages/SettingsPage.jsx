@@ -193,6 +193,21 @@ const SettingsPage = () => {
     loadInitialData();
   };
 
+  // Appliquer la langue du document quand le paramètre change
+  useEffect(() => {
+    if (!settings) return;
+    const lang =
+      settings.language === "auto"
+        ? navigator.language?.split("-")[0] || "en"
+        : settings.language || "en";
+    try {
+      document.documentElement.lang = lang;
+    } catch (e) {
+      // pas critique
+      console.warn("Impossible de définir la langue du document", e);
+    }
+  }, [settings]);
+
   const handleDeleteAccount = async () => {
     // Étape de confirmation cruciale
     const isConfirmed = window.confirm(
@@ -399,25 +414,6 @@ const SettingsPage = () => {
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                         placeholder="Votre poste"
                       />
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-6">
-                    <h3 className="text-md font-medium text-gray-900 mb-4">
-                      Photo de profil
-                    </h3>
-                    <div className="flex items-center space-x-6">
-                      <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xl">
-                        JD
-                      </div>
-                      <div className="flex space-x-3">
-                        <button className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                          Changer
-                        </button>
-                        <button className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-                          Supprimer
-                        </button>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -724,7 +720,150 @@ const SettingsPage = () => {
                 </div>
               )}
 
-              {/* Autres sections... */}
+              {activeSection === "langue" && (
+                <div className="p-8">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                    Langue
+                  </h2>
+                  <p className="text-gray-600 text-sm mb-6 dark:text-gray-400">
+                    Choisissez la langue de l'interface. Vous pouvez laisser en
+                    "Auto" pour utiliser la langue du navigateur.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl">
+                    {[
+                      { id: "fr", label: "Français", hint: "Français (FR)" },
+                      { id: "en", label: "English", hint: "English (EN)" },
+                      {
+                        id: "auto",
+                        label: "Auto",
+                        hint: "Détecter depuis le navigateur",
+                      },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        onClick={() => handleSettingsChange("language", opt.id)}
+                        className={`p-4 border-2 rounded-xl text-left transition-all duration-200 flex flex-col items-start justify-between ${
+                          settings.language === opt.id
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-gray-100">
+                              {opt.label}
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {opt.hint}
+                            </div>
+                          </div>
+                          {settings.language === opt.id && (
+                            <span className="text-sm text-blue-600 font-semibold">
+                              Sélectionné
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 text-sm text-gray-700 dark:text-gray-300">
+                    <p>
+                      Langue actuelle appliquée:{" "}
+                      <span className="font-medium">
+                        {settings.language === "auto"
+                          ? navigator.language?.split("-")[0] || "en"
+                          : settings.language}
+                      </span>
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Après enregistrement, l'interface utilisera la langue
+                      sélectionnée.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {activeSection === "privacy" && (
+                <div className="p-8">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                    Confidentialité
+                  </h2>
+                  <p className="text-gray-600 text-sm mb-6 dark:text-gray-400">
+                    Contrôlez la visibilité de votre profil et de vos
+                    informations personnelles sur la plateforme.
+                  </p>
+                  <div className="mb-8">
+                    <h3 className="text-md font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                      Visibilité du profil
+                    </h3>
+                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={settings.privacy.showProfileInSearch}
+                        onChange={(e) =>
+                          handleSettingsChange("privacy", {
+                            ...settings.privacy,
+                            showProfileInSearch: e.target.checked,
+                          })
+                        }
+                        className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600"
+                      />
+                      <span className="text-gray-900 dark:text-gray-100 font-medium">
+                        Afficher mon profil dans les résultats de recherche
+                      </span>
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-8">
+                      Si désactivé, votre profil ne sera pas visible dans les
+                      recherches publiques.
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-md font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                      Informations de contact
+                    </h3>
+                    <div className="relative max-w-md">
+                      <select
+                        value={settings.privacy.showContactInfo}
+                        onChange={(e) =>
+                          handleSettingsChange("privacy", {
+                            ...settings.privacy,
+                            showContactInfo: e.target.value,
+                          })
+                        }
+                        className="input input-bordered w-full pr-10 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
+                      >
+                        <option value="all">Visible par tous</option>
+                        <option value="connections">
+                          Visible par mes connexions
+                        </option>
+                        <option value="none">Invisible</option>
+                      </select>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 dark:text-gray-500">
+                        <svg
+                          width="20"
+                          height="20"
+                          fill="none"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            d="M6 8l4 4 4-4"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Contrôlez qui peut voir vos coordonnées (email, téléphone,
+                      etc.).
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

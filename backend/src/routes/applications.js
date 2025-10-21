@@ -3,9 +3,12 @@ const express = require("express");
 const { Application, Job, User, ClientProfile } = require("../models"); // Importer les modèles nécessaires
 const { authenticateToken } = require("../middleware/auth");
 const { logger } = require("../utils/logger");
+const activitiesRouter = require("./activities");
 
 module.exports = function (io) {
   const router = express.Router();
+
+  const activityCreator = activitiesRouter(io);
 
   // --- PUT /api/applications/:id/status (Traduit pour Sequelize) ---
   router.put("/:id/status", authenticateToken, async (req, res) => {
@@ -18,13 +21,17 @@ module.exports = function (io) {
       const application = await Application.findByPk(id);
 
       if (!application) {
-        return res.status(404).json({ success: false, error: "Candidature introuvable" });
+        return res
+          .status(404)
+          .json({ success: false, error: "Candidature introuvable" });
       }
 
       // Optionnel mais recommandé: Vérifier que l'utilisateur a le droit de modifier cette candidature
       const job = await application.getJob(); // Méthode générée par Sequelize
       if (job.clientId !== clientUser.id) {
-          return res.status(403).json({ success: false, error: "Action non autorisée."});
+        return res
+          .status(403)
+          .json({ success: false, error: "Action non autorisée." });
       }
 
       // 2. Mettre à jour l'instance et sauvegarder
@@ -32,10 +39,10 @@ module.exports = function (io) {
 
       // Ajouter un événement à l'historique de la candidature (équivalent du middleware Mongoose)
       const historyEntry = {
-        event: 'status_changed',
+        event: "status_changed",
         user: clientUser.id,
         details: `Statut changé à '${status}'.`,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
       // Sequelize gère les champs JSON de manière transparente
       application.history = [...(application.history || []), historyEntry];
@@ -51,14 +58,36 @@ module.exports = function (io) {
         jobId: application.jobId,
         candidateId: candidateId,
       };
-      
-      // La room de Socket.IO utilise l'ID de l'utilisateur (qui est maintenant un entier)
-      io.to(`user-${candidateId}`).emit("application-updated", notificationData);
-      
-      logger.info(`Statut de l'application ${application.id} mis à jour à '${status}' par ${clientUser.id}`);
-      
-      res.json({ success: true, application });
 
+      // La room de Socket.IO utilise l'ID de l'utilisateur (qui est maintenant un entier)
+      io.to(`user-${candidateId}`).emit(
+        "application-updated",
+        notificationData
+      );
+
+      let activityMessage = "";
+      if (status === "accepted") {
+        activityMessage = `🎉 Bonne nouvelle ! Votre candidature pour "${job.title}" a été acceptée.`;
+      } else if (status === "rejected") {
+        activityMessage = `Mise à jour : Votre candidature pour "${job.title}" a été refusée.`;
+      }
+
+      if (activityMessage) {
+        await activityCreator.createActivity({
+          userId: application.candidateId,
+          type: "application_update",
+          message: activityMessage,
+          referenceId: application.id,
+          referenceType: "application",
+          status: "new",
+        });
+      }
+
+      logger.info(
+        `Statut de l'application ${application.id} mis à jour à '${status}' par ${clientUser.id}`
+      );
+
+      res.json({ success: true, application });
     } catch (err) {
       logger.error("Erreur mise à jour statut candidature:", err);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -72,39 +101,42 @@ module.exports = function (io) {
 
       const userApplications = await Application.findAll({
         where: { candidateId: userId },
-        order: [['createdAt', 'DESC']],
+        order: [["createdAt", "DESC"]],
         include: [
           {
             model: Job,
-            as: 'job',
-            attributes: ['id', 'title'],
+            as: "job",
+            attributes: ["id", "title"],
             include: {
               model: User,
-              as: 'client',
-              attributes: ['id'], // On a juste besoin de l'ID du user client pour la jointure
+              as: "client",
+              attributes: ["id"], // On a juste besoin de l'ID du user client pour la jointure
               // Jointure imbriquée sur le profil du client pour récupérer l'avatar
               include: {
                 model: ClientProfile,
-                as: 'clientProfile',
-                attributes: ['avatar', 'company']
-              }
-            }
-          }
-        ]
+                as: "clientProfile",
+                attributes: ["avatar", "company"],
+              },
+            },
+          },
+        ],
       });
 
       // --- Transformation pour simplifier les données pour le frontend ---
-      const formattedApplications = userApplications.map(app => {
+      const formattedApplications = userApplications.map((app) => {
         const plainApp = app.get({ plain: true });
-        if (plainApp.job && plainApp.job.client && plainApp.job.client.clientProfile) {
-            plainApp.job.client.profile = plainApp.job.client.clientProfile;
-            delete plainApp.job.client.clientProfile;
+        if (
+          plainApp.job &&
+          plainApp.job.client &&
+          plainApp.job.client.clientProfile
+        ) {
+          plainApp.job.client.profile = plainApp.job.client.clientProfile;
+          delete plainApp.job.client.clientProfile;
         }
         return plainApp;
       });
 
       res.json({ success: true, data: formattedApplications });
-
     } catch (error) {
       logger.error("Erreur récupération candidatures utilisateur:", error);
       res.status(500).json({ success: false, error: "Erreur serveur" });
@@ -121,30 +153,39 @@ module.exports = function (io) {
       const application = await Application.findByPk(id);
 
       if (!application) {
-        return res.status(404).json({ success: false, error: "Candidature non trouvée." });
+        return res
+          .status(404)
+          .json({ success: false, error: "Candidature non trouvée." });
       }
 
       // 2. Vérification de sécurité : Seul le propriétaire de la candidature peut la retirer
       if (application.candidateId !== candidateUser.id) {
-          return res.status(403).json({ success: false, error: "Action non autorisée. Vous n'êtes pas le propriétaire de cette candidature." });
+        return res.status(403).json({
+          success: false,
+          error:
+            "Action non autorisée. Vous n'êtes pas le propriétaire de cette candidature.",
+        });
       }
-      
+
       // 3. Vérification de la logique métier : On ne peut pas retirer une candidature déjà traitée (refusée, etc.)
-      const withdrawableStatuses = ['pending', 'reviewed', 'accepted'];
+      const withdrawableStatuses = ["pending", "reviewed", "accepted"];
       if (!withdrawableStatuses.includes(application.status)) {
-        return res.status(400).json({ success: false, error: `Cette candidature a le statut '${application.status}' et ne peut plus être retirée.` });
+        return res.status(400).json({
+          success: false,
+          error: `Cette candidature a le statut '${application.status}' et ne peut plus être retirée.`,
+        });
       }
 
       // 4. Mettre à jour les informations de la candidature
-      application.status = 'withdrawn';
+      application.status = "withdrawn";
       application.withdrawnReason = reason || "Pas de raison spécifiée.";
-      
+
       // Ajouter une entrée à l'historique pour la traçabilité
       const historyEntry = {
-        event: 'withdrawn_by_candidate',
+        event: "withdrawn_by_candidate",
         user: candidateUser.id,
         details: `Candidature retirée. Raison : ${application.withdrawnReason}`,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
       application.history = [...(application.history || []), historyEntry];
 
@@ -153,18 +194,24 @@ module.exports = function (io) {
       // 5. (Optionnel mais recommandé) Notifier le client en temps réel
       const job = await application.getJob();
       if (job && job.clientId) {
-          io.to(`user-${job.clientId}`).emit('application-withdrawn', {
-              jobId: job.id,
-              jobTitle: job.title,
-              applicationId: application.id,
-              candidateName: `${candidateUser.profile?.firstName || ''} ${candidateUser.profile?.lastName || ''}`.trim(),
-          });
+        io.to(`user-${job.clientId}`).emit("application-withdrawn", {
+          jobId: job.id,
+          jobTitle: job.title,
+          applicationId: application.id,
+          candidateName: `${candidateUser.profile?.firstName || ""} ${
+            candidateUser.profile?.lastName || ""
+          }`.trim(),
+        });
       }
 
-      logger.info(`Candidature ${id} retirée par le candidat ${candidateUser.id}`);
-      
-      res.json({ success: true, message: "Votre candidature a été retirée avec succès." });
+      logger.info(
+        `Candidature ${id} retirée par le candidat ${candidateUser.id}`
+      );
 
+      res.json({
+        success: true,
+        message: "Votre candidature a été retirée avec succès.",
+      });
     } catch (err) {
       logger.error("Erreur lors du retrait de la candidature:", err);
       res.status(500).json({ success: false, error: "Erreur serveur." });
@@ -230,9 +277,9 @@ module.exports = function (io) {
 //       };
 
 //       io.to(`user-${candidateId}`).emit("application-updated", notificationData);
-      
+
 //       logger.info(`Statut de l'application ${application.id} mis à jour à '${status}'`);
-      
+
 //       res.json({ success: true, application });
 
 //     } catch (err) {

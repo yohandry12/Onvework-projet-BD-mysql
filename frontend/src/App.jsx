@@ -30,6 +30,7 @@ import CreateJob from "./pages/CreateJob";
 import JobHistory from "./pages/JobHistory";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import ManageJobs from "./pages/admin/ManageJobs";
 import ManageTestimonials from "./pages/admin/ManageTestimonials";
 import ManageReports from "./pages/admin/ManageReports";
 import ClientProfilePage from "./pages/ClientProfilePage";
@@ -157,6 +158,7 @@ function AppRoutes() {
             {/* Redirection de /admin vers /admin/dashboard */}
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="jobs" element={<ManageJobs />} />
             <Route path="testimonials" element={<ManageTestimonials />} />
             <Route path="reports" element={<ManageReports />} />
             <Route path="users" element={<ManageUsers />} />

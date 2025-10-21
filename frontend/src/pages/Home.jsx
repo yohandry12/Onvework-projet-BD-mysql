@@ -238,13 +238,14 @@ const Home = () => {
 
       <div className="relative max-w-7xl mx-auto px-8">
         {/* LA SECTION HERO EST MAINTENANT LE FORMULAIRE DE RECHERCHE */}
-        <section className="py-24 text-center">
+        <section className="py-20 md:py-24 text-center">
           <div className="relative inline-block">
-            {/* --- LES ANIMATIONS SONT PLACÉES ICI --- */}
+            {/* --- LES ANIMATIONS SONT PLACÉES ICI (avec des classes responsives) --- */}
 
             {/* Étoile filante (dessin) */}
+            {/* On cache l'étoile la plus grande sur les très petits écrans */}
             <AnimatedIcon
-              className="-top-12 -right-24 text-white"
+              className="hidden md:block absolute -top-12 -right-24 text-white"
               animation="float"
             >
               <svg
@@ -253,9 +254,8 @@ const Home = () => {
                 fill="none"
                 width="120"
                 height="120"
-                className="your-classes"
               >
-                {/* Traits filants */}
+                {/* ... (contenu du SVG inchangé) ... */}
                 <line
                   x1="10"
                   y1="60"
@@ -283,8 +283,6 @@ const Home = () => {
                   strokeWidth="3"
                   strokeLinecap="round"
                 />
-
-                {/* Étoile */}
                 <path
                   d="M70 40 L75 55 L90 55 L78 65 L82 80 L70 72 L58 80 L62 65 L50 55 L65 55 Z"
                   stroke="white"
@@ -295,29 +293,31 @@ const Home = () => {
               </svg>
             </AnimatedIcon>
 
-            {/* Petites étoiles scintillantes */}
+            {/* Petites étoiles scintillantes (position ajustée) */}
             <AnimatedIcon
-              className="top-12 -right-8 text-yellow-300 text-2xl"
+              className="absolute top-0 -right-4 md:top-12 md:-right-8 text-yellow-300 text-2xl"
               animation="pulse"
             >
               ✨
             </AnimatedIcon>
 
-            {/* Étoile orange simple */}
+            {/* Étoile orange simple (position ajustée) */}
             <AnimatedIcon
-              className="bottom-0 -right-20 text-orange-500 text-4xl"
+              className="absolute bottom-8 -left-4 md:bottom-0 md:-right-20 text-orange-500 text-3xl md:text-4xl"
               animation="bounce"
             >
               ✦
             </AnimatedIcon>
 
-            <h1 className="text-5xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
-              Suivez vos <br /> rêves{" "}
+            {/* On ajuste la taille du texte pour mobile et desktop */}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight tracking-tight mb-4 md:mb-6">
+              Suivez vos <br className="sm:hidden" /> rêves{" "}
               <span className="text-emerald-300">professionnels</span>
             </h1>
-            {/* Soulignement SVG */}
+
+            {/* Soulignement SVG (taille ajustée) */}
             <svg
-              className="mx-auto w-64 -mt-4"
+              className="mx-auto w-48 sm:w-64 -mt-2 md:-mt-4"
               viewBox="0 0 200 20"
               xmlns="http://www.w3.org/2000/svg"
             >
@@ -329,19 +329,23 @@ const Home = () => {
               />
             </svg>
           </div>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-8">
+
+          {/* On ajuste la taille du texte du paragraphe et les marges */}
+          <p className="text-base md:text-lg text-gray-400 max-w-2xl mx-auto my-8 px-4 sm:px-0">
             Explorez des milliers de missions en un seul endroit et obtenez le
             travail de vos rêves.
           </p>
+
+          {/* Le formulaire de recherche devient vertical sur mobile */}
           <form
             onSubmit={onSearch}
-            className="flex max-w-xl mx-auto bg-white/5 rounded-lg overflow-hidden border border-white/20 shadow-lg backdrop-blur-sm"
+            className="flex flex-col sm:flex-row w-full max-w-md sm:max-w-xl mx-auto bg-white/5 rounded-lg overflow-hidden border border-white/20 shadow-lg backdrop-blur-sm"
           >
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Ex : React, Design, Marketing..."
-              className="flex-1 px-4 py-3 bg-transparent text-white placeholder-gray-400 focus:outline-none"
+              className="flex-1 px-4 py-3 bg-transparent text-white placeholder-gray-400 focus:outline-none text-center sm:text-left"
             />
             <button
               type="submit"

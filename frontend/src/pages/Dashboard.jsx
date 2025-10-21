@@ -82,6 +82,37 @@ const Dashboard = () => {
     }
   }, []);
 
+  // Helper: format time relative simple
+  const timeAgo = (isoDate) => {
+    try {
+      const diff = Math.floor(
+        (Date.now() - new Date(isoDate).getTime()) / 1000
+      );
+      if (diff < 60) return `${diff}s`;
+      const m = Math.floor(diff / 60);
+      if (m < 60) return `${m}m`;
+      const h = Math.floor(m / 60);
+      if (h < 24) return `${h}h`;
+      const d = Math.floor(h / 24);
+      return `${d}j`;
+    } catch (e) {
+      return "quelques instants";
+    }
+  };
+
+  // Récupérer les activités récentes
+  const fetchRecentActivities = useCallback(async () => {
+    try {
+      const res = await apiService.activities.getRecent(20);
+      if (res.success && Array.isArray(res.activities)) {
+        setRecentActivity(res.activities);
+      }
+    } catch (e) {
+      console.error("Erreur chargement activités:", e);
+      // En cas d'erreur, on garde les activités existantes
+    }
+  }, []);
+
   useEffect(() => {
     // Cette fonction sera appelée chaque fois que l'onglet du navigateur devient visible
     const handleVisibilityChange = () => {
@@ -103,29 +134,65 @@ const Dashboard = () => {
     if (user) {
       setLoading(true);
       fetchDashboardData();
+      // Charger aussi les activités récentes
+      fetchRecentActivities();
     }
-  }, [user, fetchDashboardData]);
+  }, [user, fetchDashboardData, fetchRecentActivities]);
 
   // Nouvel useEffect pour écouter les mises à jour via socket
   useEffect(() => {
     if (socket) {
-      const handleApplicationUpdate = (data) => {
-        console.log(
-          "Mise à jour de candidature reçue, rafraîchissement des stats...",
-          data
-        );
-        // Quand le statut d'une candidature change, re-fetcher les stats
-        fetchDashboardData();
+      // Écouter les updates des activités
+      const handleActivity = (activity) => {
+        setRecentActivity((prev) => {
+          // éviter les doublons
+          if (prev.find((p) => p.id === activity.id)) return prev;
+          return [activity, ...prev.slice(0, 19)]; // garder max 20
+        });
       };
 
-      socket.on("application-updated", handleApplicationUpdate);
+      const handleActivityUpdate = (update) => {
+        setRecentActivity((prev) =>
+          prev.map((a) => (a.id === update.id ? { ...a, ...update } : a))
+        );
+      };
 
-      // Nettoyage de l'écouteur
+      const handleActivityRemoved = ({ id }) => {
+        setRecentActivity((prev) => prev.filter((a) => a.id !== id));
+      };
+
+      socket.on("activity", handleActivity);
+      socket.on("activity-updated", handleActivityUpdate);
+      socket.on("activity-removed", handleActivityRemoved);
+
       return () => {
-        socket.off("application-updated", handleApplicationUpdate);
+        socket.off("activity", handleActivity);
+        socket.off("activity-updated", handleActivityUpdate);
+        socket.off("activity-removed", handleActivityRemoved);
       };
     }
-  }, [socket, fetchDashboardData]);
+  }, [socket]);
+
+  // Marquer comme lu (tentative API puis update local)
+  const markAsRead = async (id) => {
+    try {
+      await apiService.activities.markAsRead(id);
+      setRecentActivity((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, read: true } : a))
+      );
+    } catch (e) {
+      console.error("Erreur marquage activité comme lue:", e);
+    }
+  };
+
+  const removeActivity = async (id) => {
+    try {
+      await apiService.activities.delete(id);
+      setRecentActivity((prev) => prev.filter((a) => a.id !== id));
+    } catch (e) {
+      console.error("Erreur suppression activité:", e);
+    }
+  };
 
   const CandidateDashboard = () => (
     <div className="space-y-6">
@@ -384,11 +451,13 @@ const Dashboard = () => {
           <BellIcon className="h-5 w-5 mr-2" />
           Activité récente
         </h2>
-        <div className="space-y-3">
+        <div className="space-y-3 relative">
           {recentActivity.map((activity, index) => (
             <div
-              key={index}
-              className="flex items-center p-3 bg-gray-50 rounded-lg"
+              key={activity.id}
+              className={`flex items-center p-3 ${
+                activity.read ? "bg-gray-50" : "bg-blue-50"
+              } rounded-lg group hover:shadow-sm transition-shadow relative`}
             >
               <div
                 className={`w-2 h-2 rounded-full mr-3 ${
@@ -401,12 +470,37 @@ const Dashboard = () => {
                     : "bg-gray-400"
                 }`}
               ></div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-900">{activity.message}</p>
-                <p className="text-xs text-gray-500">Il y a {activity.time}</p>
+                <p className="text-xs text-gray-500">
+                  Il y a {timeAgo(activity.createdAt)}
+                </p>
+              </div>
+              <div className="ml-4 flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                {!activity.read && (
+                  <button
+                    onClick={() => markAsRead(activity.id)}
+                    className="p-1 hover:bg-blue-100 rounded-full text-blue-600"
+                    title="Marquer comme lu"
+                  >
+                    <CheckIcon className="h-4 w-4" />
+                  </button>
+                )}
+                <button
+                  onClick={() => removeActivity(activity.id)}
+                  className="p-1 hover:bg-red-100 rounded-full text-red-600"
+                  title="Supprimer"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
               </div>
             </div>
           ))}
+          {recentActivity.length === 0 && (
+            <div className="text-center py-6 text-gray-500">
+              Aucune activité récente
+            </div>
+          )}
         </div>
       </div>
 

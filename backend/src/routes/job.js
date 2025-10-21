@@ -157,6 +157,17 @@ module.exports = function (io) {
           clientId: clientUser.id,
         });
         io.emit("new-job-posted", newJob);
+
+        // Créer une activité pour le client
+        await router.createActivity({
+          userId: clientUser.id,
+          type: "job",
+          message: `Vous avez publié une nouvelle mission : ${title}`,
+          referenceId: newJob.id,
+          referenceType: "job",
+          status: "new",
+        });
+
         res.status(201).json({ success: true, job: newJob });
       } catch (error) {
         if (error instanceof sequelize.ValidationError) {
@@ -621,6 +632,26 @@ module.exports = function (io) {
           jobTitle: job.title,
         });
 
+        // Créer une activité pour le candidat
+        await router.createActivity({
+          userId: candidateId,
+          type: "application",
+          message: `Vous avez postulé à la mission : ${job.title}`,
+          referenceId: jobId,
+          referenceType: "job",
+          status: "pending",
+        });
+
+        // Créer une activité pour le client
+        await router.createActivity({
+          userId: job.clientId,
+          type: "application",
+          message: `Nouvelle candidature reçue pour la mission : ${job.title}`,
+          referenceId: jobId,
+          referenceType: "job",
+          status: "new",
+        });
+
         console.log("[Route /apply] Candidature traitée avec succès.");
         res.status(201).json({
           success: true,
@@ -735,14 +766,44 @@ module.exports = function (io) {
             .json({ success: false, error: "Accès non autorisé." });
         }
 
-        // 4. Mettre à jour le statut et sauvegarder
-        job.status = status;
-        const updatedJob = await job.save();
+        // 4. Mettre à jour uniquement le statut sans déclencher les autres validations
+        await Job.update(
+          { status },
+          {
+            where: { id },
+            fields: ["status"], // Ne mettre à jour que le champ status
+            validate: false, // Désactiver la validation complète du modèle
+          }
+        );
+
+        // Récupérer la mission mise à jour
+        const updatedJob = await Job.findByPk(id);
 
         logger.info("Statut de la mission mis à jour", {
           jobId: id,
           newStatus: status,
         });
+
+        // Créer une activité selon le nouveau statut
+        if (status === "filled") {
+          await router.createActivity({
+            userId: updatedJob.clientId,
+            type: "job",
+            message: `La mission "${updatedJob.title}" est maintenant terminée`,
+            referenceId: id,
+            referenceType: "job",
+            status: "info",
+          });
+        } else if (status === "closed") {
+          await router.createActivity({
+            userId: updatedJob.clientId,
+            type: "job",
+            message: `La mission "${updatedJob.title}" a été fermée`,
+            referenceId: id,
+            referenceType: "job",
+            status: "info",
+          });
+        }
 
         res.json({ success: true, job: updatedJob });
       } catch (error) {
@@ -821,6 +882,16 @@ module.exports = function (io) {
         });
 
         await t.commit();
+
+        // Créer une activité pour l'employé
+        await router.createActivity({
+          userId: employeeId,
+          type: "recommendation",
+          message: `Vous avez reçu une recommandation et obtenu le badge ${newBadge}!`,
+          referenceId: jobId,
+          referenceType: "job",
+          status: "new",
+        });
 
         res.status(201).json({
           success: true,

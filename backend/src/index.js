@@ -25,6 +25,8 @@ const reportRoutes = require("./routes/reports");
 const adminRoutes = require("./routes/adminUser");
 const recommendationAdminRoutes = require("./routes/adminRecommendation");
 const settingsRoutes = require("./routes/settings");
+const activitiesRoutesFactory = require("./routes/activities");
+const adminJobRoutes = require("./routes/adminJob");
 
 // --- 🌍 CORS ---
 const allowedOrigins = [
@@ -92,6 +94,8 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/admin/users", adminRoutes); // Routes admin pour la gestion des utilisateurs
 app.use("/api/recommendations/admin", recommendationAdminRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/activities", activitiesRoutesFactory(io));
+app.use("/api/admin/jobs", adminJobRoutes);
 // Sert les fichiers statiques du dossier 'uploads'
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 

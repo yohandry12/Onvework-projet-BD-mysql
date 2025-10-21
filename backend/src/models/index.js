@@ -29,6 +29,7 @@ db.Testimonial = require("./Testimonial")(sequelize);
 db.Report = require("./Report")(sequelize);
 db.Recommendation = require("./Recommendation")(sequelize);
 db.UserSettings = require("./UserSettings")(sequelize);
+db.Activity = require("./Activity")(sequelize);
 
 db.User.hasOne(db.UserSettings, {
   foreignKey: "userId",
@@ -84,6 +85,14 @@ db.Report.belongsTo(db.User, {
   foreignKey: "reporterId",
   as: "reporter",
 });
+
+// Activités utilisateur
+db.User.hasMany(db.Activity, {
+  foreignKey: "userId",
+  as: "activities",
+  onDelete: "CASCADE",
+});
+db.Activity.belongsTo(db.User, { foreignKey: "userId", as: "user" });
 
 // db.Job.hasMany(db.Report, {
 //   foreignKey: 'contentId',

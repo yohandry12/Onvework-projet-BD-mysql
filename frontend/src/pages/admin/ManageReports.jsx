@@ -47,11 +47,12 @@ const ManageReports = () => {
     }
 
     try {
-      // 3. --- CORRECTION : Utiliser le vrai 'id' du signalement ---
-      await apiService.reports.updateStatus(reportId, { status }); // Le backend attend un objet { status: '...' }
+      // On passe directement la valeur du statut, pas un objet
+      await apiService.reports.updateStatus(reportId, status);
       setReports((prev) => prev.filter((report) => report.id !== reportId));
     } catch (err) {
-      alert("Erreur lors de la mise à jour du statut.");
+      // Afficher le message d'erreur spécifique s'il existe
+      alert(err.message || "Erreur lors de la mise à jour du statut.");
       console.error(err);
     }
   };

@@ -13,6 +13,7 @@ import {
 const JobCard = ({ job, onApply }) => {
   const isCompleted = job.status === "filled";
   const isRepublished = !!job.clonedFromId;
+  const isFrozen = job.isFrozen;
 
   // Fonction utilitaire pour le budget
   const formatBudget = (min, max, currency) => {
@@ -60,6 +61,12 @@ const JobCard = ({ job, onApply }) => {
                 Terminée
               </span>
             )}
+
+            {isFrozen && (
+              <span className="flex items-center bg-red-100 text-red-800 text-xs font-medium px-2.5 py-1 rounded-full">
+                Signalé
+              </span>
+            )}
           </div>
         </div>
         <span className="text-xs text-gray-400">
@@ -102,10 +109,14 @@ const JobCard = ({ job, onApply }) => {
         </div>
         <button
           onClick={() => onApply(job)}
-          disabled={isCompleted}
+          disabled={isCompleted || isFrozen}
           className="font-semibold px-6 py-2 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed bg-gray-800 text-white hover:bg-gray-900"
         >
-          {isCompleted ? "Mission terminée" : "Postuler"}
+          {isCompleted
+            ? "Mission terminée"
+            : isFrozen
+            ? "Suspendu"
+            : "Postuler"}
         </button>
       </div>
     </div>

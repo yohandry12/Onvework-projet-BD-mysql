@@ -125,7 +125,7 @@ const AdminDashboard = () => {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Administration
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Link
               to="/admin/users"
               className="flex items-center p-4 border-2 border-dashed rounded-lg hover:border-blue-400 hover:bg-blue-50"
@@ -153,6 +153,14 @@ const AdminDashboard = () => {
             >
               <BellIcon className="h-6 w-6 text-red-500 mr-3" />
               <span>Signalements</span>
+            </Link>
+
+            <Link
+              to="/admin/jobs"
+              className="flex items-center p-4 border-2 border-dashed rounded-lg hover:border-red-400 hover:bg-red-50"
+            >
+              <BriefcaseIcon className="h-6 w-6 text-red-500 mr-3" />
+              <span>Gérer les offres d'emploi</span>
             </Link>
           </div>
         </div>

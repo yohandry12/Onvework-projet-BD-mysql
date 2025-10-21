@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 
 export const useTheme = () => {
-  // 1. Initialiser le thème depuis localStorage ou utiliser 'auto' par défaut
+  // 1. Initialiser le thème depuis localStorage ou utiliser 'light' par défaut
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "auto";
+    return localStorage.getItem("theme") || "light";
   });
 
   useEffect(() => {

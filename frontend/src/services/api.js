@@ -137,6 +137,9 @@ export const apiService = {
       }).toString();
       return apiClient.get(`/jobs/search?${params}`);
     },
+    adminGetAll: (params) => apiClient.get("/admin/jobs", { params }),
+    adminDelete: (id) => apiClient.delete(`/admin/jobs/${id}`),
+    adminUnfreeze: (id) => apiClient.patch(`/admin/jobs/${id}/unfreeze`),
   },
 
   // API des candidatures
@@ -206,6 +209,14 @@ export const apiService = {
     getStats: () => apiClient.get("/dashboard/stats"),
   },
 
+  // API des activités
+  activities: {
+    getRecent: (limit = 20) =>
+      apiClient.get(`/activities/recent?limit=${limit}`),
+    markAsRead: (id) => apiClient.post(`/activities/${id}/read`),
+    delete: (id) => apiClient.delete(`/activities/${id}`),
+  },
+
   testimonials: {
     create: (data) => apiService.post("/testimonials", data),
     getFeatured: () => apiService.get("/testimonials/featured"),
@@ -217,8 +228,20 @@ export const apiService = {
   reports: {
     create: (reportData) => apiService.post("/reports", reportData),
     getAllForAdmin: () => apiService.get("/reports"),
-    updateStatus: (id, status) =>
-      apiService.patch(`/reports/${id}`, { status }),
+    updateStatus: (id, status) => {
+      // Validation des statuts autorisés
+      const validStatuses = ["pending", "reviewed", "resolved", "dismissed"];
+      if (!validStatuses.includes(status)) {
+        return Promise.reject(
+          new Error(
+            "Statut invalide. Les statuts autorisés sont : " +
+              validStatuses.join(", ")
+          )
+        );
+      }
+      const payload = { status: status };
+      return apiService.patch(`/reports/${id}`, payload);
+    },
   },
 
   recommendations: {
