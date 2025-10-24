@@ -129,7 +129,17 @@ module.exports = (sequelize) => {
       },
       deadline: { type: DataTypes.DATE },
       startDate: { type: DataTypes.DATEONLY, field: "start_date" },
-      duration: { type: DataTypes.STRING },
+      //   duration: { type: DataTypes.STRING },
+      durationValue: {
+        type: DataTypes.INTEGER,
+        field: "duration_value",
+        comment: "Ex: 10, 3, 6. La quantité de temps.",
+      },
+      durationUnit: {
+        type: DataTypes.ENUM("heures", "jours", "semaines", "mois", "projet"),
+        field: "duration_unit",
+        comment: "L'unité de temps (heures, jours, etc.)",
+      },
       featured: { type: DataTypes.BOOLEAN, defaultValue: false },
       isUrgent: {
         type: DataTypes.BOOLEAN,

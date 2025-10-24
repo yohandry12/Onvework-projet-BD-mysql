@@ -47,6 +47,14 @@ const educationLevels = [
   { value: "phd", label: "Doctorat" },
 ];
 
+const durationUnits = [
+  { value: "heures", label: "Heure(s)" },
+  { value: "jours", label: "Jour(s)" },
+  { value: "semaines", label: "Semaine(s)" },
+  { value: "mois", label: "Mois" },
+  { value: "projet", label: "Par Projet" }, // Pour les durées non définies
+];
+
 const CreateJob = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [form, setForm] = useState({
@@ -66,7 +74,9 @@ const CreateJob = () => {
     languages: "",
     deadline: "",
     startDate: "",
-    duration: "",
+    // duration: "",
+    durationValue: "",
+    durationUnit: "jours",
     featured: false,
     tags: "",
     isUrgent: false,
@@ -213,7 +223,10 @@ const CreateJob = () => {
 
       deadline: form.deadline || null,
       startDate: form.startDate || null,
-      duration: form.duration,
+      // duration: form.duration,
+      durationValue:
+        form.durationUnit === "projet" ? null : Number(form.durationValue),
+      durationUnit: form.durationUnit,
       featured: form.featured,
 
       tags: Array.isArray(form.tags)
@@ -586,55 +599,77 @@ const CreateJob = () => {
 
             <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Calendar className="h-5 w-5 mr-2 text-blue-500" />
-                Calendrier de la mission
+                <Clock className="h-5 w-5 mr-2 text-blue-500" />
+                Durée et Planning
               </h3>
 
+              {/* ▼▼▼ NOUVEAU BLOC POUR LA DURÉE FLEXIBLE ▼▼▼ */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Durée estimée de la mission *
+                </label>
+                <div className="flex gap-2">
+                  <div className="w-1/2">
+                    <input
+                      name="durationValue"
+                      type="number"
+                      min="1"
+                      value={form.durationValue}
+                      onChange={handleChange}
+                      // Le champ est désactivé si la durée est "Par Projet"
+                      disabled={form.durationUnit === "projet"}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl disabled:bg-gray-100"
+                      placeholder="Ex: 10, 3, 6..."
+                    />
+                  </div>
+                  <div className="w-1/2">
+                    <select
+                      name="durationUnit"
+                      value={form.durationUnit}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white"
+                    >
+                      {durationUnits.map((unit) => (
+                        <option key={unit.value} value={unit.value}>
+                          {unit.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {form.durationUnit === "projet" && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    La durée sera déterminée par les livrables du projet.
+                  </p>
+                )}
+              </div>
+
+              {/* Les dates deviennent optionnelles */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date limite de candidature
-                  </label>
-                  <input
-                    name="deadline"
-                    type="date"
-                    value={form.deadline}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Laissez vide pour laisser ouvert
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date de début souhaitée
+                    Date de début souhaitée (Optionnel)
                   </label>
                   <input
                     name="startDate"
                     type="date"
                     value={form.startDate}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl"
                   />
                 </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Durée estimée de la mission
-                </label>
-                <input
-                  name="duration"
-                  value={form.duration}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Ex: 2 mois, 6 semaines, 3-4 mois..."
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Donnez une estimation réaliste pour attirer les bons profils
-                </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date limite de candidature (Optionnel)
+                  </label>
+                  <input
+                    name="deadline"
+                    type="date"
+                    value={form.deadline}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -945,8 +980,12 @@ const CreateJob = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Durée:</span>
-                <span className="font-medium text-gray-900">
-                  {form.duration || "Non spécifiée"}
+                <span className="font-medium text-gray-900 capitalize">
+                  {form.durationUnit === "projet"
+                    ? "Par Projet"
+                    : form.durationValue
+                    ? `${form.durationValue} ${form.durationUnit}`
+                    : "Non spécifiée"}
                 </span>
               </div>
               <div className="flex justify-between">

@@ -115,6 +115,8 @@ const JobDetail = () => {
     applications,
     contact,
     duration,
+    durationValue,
+    durationUnit,
     experience,
     education,
   } = job;
@@ -201,9 +203,9 @@ const JobDetail = () => {
                     {applications.length} candidatures
                   </span>
                 )}
-                {duration && (
+                {durationValue && (
                   <span className="px-2 py-1 bg-gray-50 border rounded">
-                    Durée: {duration}
+                    Durée: {`${durationValue} ${durationUnit}`}
                   </span>
                 )}
               </div>
