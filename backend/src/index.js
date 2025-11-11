@@ -27,7 +27,8 @@ const recommendationAdminRoutes = require("./routes/adminRecommendation");
 const settingsRoutes = require("./routes/settings");
 const activitiesRoutesFactory = require("./routes/activities");
 const adminJobRoutes = require("./routes/adminJob");
-
+const startNotifyUpcomingDeadlines = require("./tasks/notifyUpcomingDeadlines");
+const aiRoutes = require("./routes/ai");
 // --- 🌍 CORS ---
 const allowedOrigins = [
   "http://localhost:5173",
@@ -96,6 +97,7 @@ app.use("/api/recommendations/admin", recommendationAdminRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/activities", activitiesRoutesFactory(io));
 app.use("/api/admin/jobs", adminJobRoutes(io));
+app.use("/api/ai", aiRoutes);
 // Sert les fichiers statiques du dossier 'uploads'
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -148,6 +150,19 @@ const startServer = async () => {
 
     server.listen(PORT, () => {
       logger.info(`🚀 Serveur lancé sur http://localhost:${PORT}`);
+      // Démarrer la tâche planifiée pour notifier les deadlines prochaines
+      try {
+        startNotifyUpcomingDeadlines(db, io, {
+          daysBefore: 3,
+          intervalMs: 1000 * 60 * 60 * 6,
+        });
+        logger.info("Tâche de notification des deadlines planifiée.");
+      } catch (err) {
+        logger.warn(
+          "Impossible de démarrer la tâche de notification des deadlines:",
+          err.message || err
+        );
+      }
     });
   } catch (error) {
     logger.error("❌ Erreur de démarrage du serveur:", error);

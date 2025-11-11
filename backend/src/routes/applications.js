@@ -1,6 +1,12 @@
 const express = require("express");
 // --- CHANGEMENT D'IMPORTS ---
-const { Application, Job, User, ClientProfile } = require("../models"); // Importer les modèles nécessaires
+const {
+  Application,
+  Job,
+  User,
+  ClientProfile,
+  sequelize,
+} = require("../models"); // Importer les modèles nécessaires
 const { authenticateToken } = require("../middleware/auth");
 const { logger } = require("../utils/logger");
 const activitiesRouter = require("./activities");
@@ -12,6 +18,7 @@ module.exports = function (io) {
 
   // --- PUT /api/applications/:id/status (Traduit pour Sequelize) ---
   router.put("/:id/status", authenticateToken, async (req, res) => {
+    const t = await sequelize.transaction();
     try {
       const { id } = req.params;
       const { status } = req.body;
@@ -47,7 +54,25 @@ module.exports = function (io) {
       // Sequelize gère les champs JSON de manière transparente
       application.history = [...(application.history || []), historyEntry];
 
-      await application.save();
+      await application.save({ transaction: t });
+
+      // Si la candidature est acceptée, le job passe "en cours".
+      if (status === "accepted") {
+        job.status = "in_progress"; // Au lieu de "closed"
+        await Job.update(
+          { status: "in_progress" }, // Les champs à mettre à jour
+          {
+            where: { id: job.id }, // La condition pour trouver le bon job
+            transaction: t, // On s'assure que c'est dans la même transaction
+          }
+        );
+
+        logger.info(
+          `Le Job ${job.id} est maintenant "en cours" car la candidature ${application.id} a été acceptée.`
+        );
+      }
+
+      await t.commit();
 
       // --- LOGIQUE DE NOTIFICATION (inchangée) ---
       const candidateId = application.candidateId.toString();
@@ -89,6 +114,7 @@ module.exports = function (io) {
 
       res.json({ success: true, application });
     } catch (err) {
+      await t.rollback();
       logger.error("Erreur mise à jour statut candidature:", err);
       res.status(500).json({ success: false, error: "Erreur serveur" });
     }

@@ -256,6 +256,11 @@ export const apiService = {
     get: () => apiService.get("/settings"),
     update: (settingsData) => apiService.put("/settings", settingsData),
   },
+
+  ai: {
+    getChatReply: (messages, jobContext) =>
+      apiService.post("/ai/chat", { messages, jobContext }),
+  },
 };
 
 // Export de l'instance Axios pour utilisation directe si nécessaire

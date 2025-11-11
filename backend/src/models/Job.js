@@ -106,7 +106,8 @@ module.exports = (sequelize) => {
           "closed",
           "filled",
           "interview",
-          "reported"
+          "reported",
+          "in_progress"
         ),
         defaultValue: "pending",
       },
@@ -217,8 +218,56 @@ module.exports = (sequelize) => {
           );
         },
         timeRemaining() {
-          // Logique du temps restant (inchangée)
-          return "Calculé...";
+          const now = new Date();
+          let endDate = null;
+
+          // CAS 1 : On privilégie toujours la deadline si elle existe
+          if (this.deadline) {
+            endDate = new Date(this.deadline);
+          }
+          // CAS 2 : Pas de deadline, on calcule à partir de la durée
+          else if (
+            this.startDate &&
+            this.durationValue &&
+            this.durationUnit &&
+            this.durationUnit !== "projet"
+          ) {
+            const startDate = new Date(this.startDate);
+            endDate = new Date(startDate); // On part de la date de début
+
+            switch (this.durationUnit) {
+              case "heures":
+                endDate.setHours(startDate.getHours() + this.durationValue);
+                break;
+              case "jours":
+                endDate.setDate(startDate.getDate() + this.durationValue);
+                break;
+              case "semaines":
+                endDate.setDate(startDate.getDate() + this.durationValue * 7);
+                break;
+              case "mois":
+                endDate.setMonth(startDate.getMonth() + this.durationValue);
+                break;
+            }
+          }
+
+          // Si on n'a aucune date de fin, on ne peut rien calculer
+          if (!endDate || endDate < now) {
+            return null; // ou "Expiré", "Non applicable", etc.
+          }
+
+          // Calcul de la différence
+          const diffMs = endDate - now;
+          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+          const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+
+          if (diffDays > 1) {
+            return `Expire dans ${diffDays} jours`;
+          } else if (diffHours > 1) {
+            return `Expire dans ${diffHours} heures`;
+          } else {
+            return `Expire bientôt`;
+          }
         },
       },
     }

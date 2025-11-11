@@ -31,6 +31,7 @@ module.exports = function (io) {
       const whereClause = {
         [Op.or]: [
           { status: "published" },
+          { status: "in_progress" },
           { status: "filled", updatedAt: { [Op.gte]: oneMonthAgo } },
         ],
       };

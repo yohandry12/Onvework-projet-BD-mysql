@@ -96,6 +96,7 @@ const JobDetail = () => {
   const isCompleted = job.status === "filled";
   const isRepublished = !!job.clonedFromId;
   const isFrozen = job.isFrozen;
+  const isInProgress = job.status === "in_progress";
   const clientName =
     job.client?.company ||
     `${job.client?.firstName || ""} ${job.client?.lastName || ""}`.trim() ||
@@ -182,6 +183,12 @@ const JobDetail = () => {
                 )}
               </div>
 
+              {isInProgress && (
+                <span className="flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+                  En cours
+                </span>
+              )}
+
               <div className="flex items-center gap-3 text-sm text-gray-500 mb-4 flex-wrap">
                 {clientName && (
                   <span className="px-2 py-1 bg-gray-50 border rounded">
@@ -203,9 +210,12 @@ const JobDetail = () => {
                     {applications.length} candidatures
                   </span>
                 )}
-                {durationValue && (
-                  <span className="px-2 py-1 bg-gray-50 border rounded">
-                    Durée: {`${durationValue} ${durationUnit}`}
+                {durationUnit && (
+                  <span className="px-2 py-1 bg-gray-50 border rounded capitalize">
+                    Durée:{" "}
+                    {durationUnit === "projet"
+                      ? "Projet"
+                      : `${durationValue} ${durationUnit}`}
                   </span>
                 )}
               </div>
@@ -296,13 +306,15 @@ const JobDetail = () => {
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => setActiveApply(true)}
-                    disabled={isCompleted || isFrozen}
+                    disabled={isCompleted || isFrozen || isInProgress}
                     className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-indigo-700"
                   >
                     {isCompleted
                       ? "Mission terminée"
                       : isFrozen
                       ? "Suspendu"
+                      : isInProgress
+                      ? "En cours"
                       : "Postuler"}
                   </button>
                   {job.client && (

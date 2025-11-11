@@ -14,6 +14,7 @@ const JobCard = ({ job, onApply }) => {
   const isCompleted = job.status === "filled";
   const isRepublished = !!job.clonedFromId;
   const isFrozen = job.isFrozen;
+  const isInProgress = job.status === "in_progress";
 
   // Fonction utilitaire pour le budget
   const formatBudget = (min, max, currency) => {
@@ -67,6 +68,12 @@ const JobCard = ({ job, onApply }) => {
                 Signalé
               </span>
             )}
+
+            {isInProgress && (
+              <span className="flex items-center bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+                En cours
+              </span>
+            )}
           </div>
         </div>
         <span className="text-xs text-gray-400">
@@ -109,13 +116,15 @@ const JobCard = ({ job, onApply }) => {
         </div>
         <button
           onClick={() => onApply(job)}
-          disabled={isCompleted || isFrozen}
+          disabled={isCompleted || isFrozen || isInProgress}
           className="font-semibold px-6 py-2 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed bg-gray-800 text-white hover:bg-gray-900"
         >
           {isCompleted
             ? "Mission terminée"
             : isFrozen
             ? "Suspendu"
+            : isInProgress
+            ? "En cours"
             : "Postuler"}
         </button>
       </div>

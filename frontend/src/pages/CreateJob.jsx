@@ -16,6 +16,8 @@ import {
   Zap,
 } from "lucide-react";
 import { apiService } from "../services/api";
+import AIChatAssistant from "../components/UI/AIChatAssistant";
+import AIFormField from "../components/UI/AIFormField";
 
 const categories = [
   { value: "development", label: "Développement", icon: "💻" },
@@ -87,6 +89,10 @@ const CreateJob = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const [activeField, setActiveField] = useState(null); // Pour suivre le champ actif
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [initialPrompt, setInitialPrompt] = useState("");
+
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -129,7 +135,9 @@ const CreateJob = () => {
 
               deadline: clonedJob.deadline || "",
               startDate: clonedJob.startDate || "",
-              duration: clonedJob.duration || "",
+              // duration: clonedJob.duration || "",
+              durationValue: clonedJob.durationValue || "",
+              durationUnit: clonedJob.durationUnit || "jours",
               featured: clonedJob.featured || false,
 
               tags: Array.isArray(clonedJob.tags)
@@ -268,6 +276,16 @@ const CreateJob = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
+  const handleAIAssist = (fieldName, fieldLabel) => {
+    setInitialPrompt(`Peux-tu m'aider à remplir le champ "${fieldLabel}" ?`);
+    setIsChatOpen(true);
+  };
+
+  const toggleChat = () => {
+    setInitialPrompt(""); // On s'assure qu'il n'y a pas de prompt initial
+    setIsChatOpen((prev) => !prev);
+  };
+
   const getStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -283,35 +301,47 @@ const CreateJob = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Titre de la mission *
-              </label>
-              <input
+              <AIFormField
+                label="Titre de la mission *"
                 name="title"
-                value={form.title}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-400"
-                placeholder="Ex: Développeur React pour application e-commerce"
-              />
+                onFocus={() => setActiveField("title")}
+                onBlur={() => setActiveField(null)}
+                onAIAssist={handleAIAssist}
+                isAIAssistantActive={activeField === "title"}
+              >
+                <input
+                  name="title"
+                  value={form.title}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-400"
+                  placeholder="Ex: Développeur React pour application e-commerce"
+                />
+              </AIFormField>
               <p className="text-xs text-gray-500 mt-1">
                 {form.title.length}/10 caractères minimum
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Description détaillée *
-              </label>
-              <textarea
+              <AIFormField
+                label="Description détaillée *"
                 name="description"
-                value={form.description}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-400 resize-none"
-                rows={6}
-                placeholder="Décrivez en détail la mission, les objectifs, les livrables attendus, le contexte de l'entreprise..."
-              />
+                onFocus={() => setActiveField("description")}
+                onBlur={() => setActiveField(null)}
+                onAIAssist={handleAIAssist}
+                isAIAssistantActive={activeField === "description"}
+              >
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-400 resize-none"
+                  rows={6}
+                  placeholder="Décrivez en détail la mission, les objectifs, les livrables attendus, le contexte de l'entreprise..."
+                />
+              </AIFormField>
               <p className="text-xs text-gray-500 mt-1">
                 {form.description.length}/50 caractères minimum
               </p>
@@ -550,32 +580,44 @@ const CreateJob = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Compétences techniques requises
-                  </label>
-                  <input
+                  <AIFormField
+                    label="Compétences techniques requises"
                     name="skills"
-                    value={form.skills}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="React, Node.js, MongoDB, Git, API REST..."
-                  />
+                    onFocus={() => setActiveField("skills")}
+                    onBlur={() => setActiveField(null)}
+                    onAIAssist={handleAIAssist}
+                    isAIAssistantActive={activeField === "skills"}
+                  >
+                    <input
+                      name="skills"
+                      value={form.skills}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      placeholder="React, Node.js, MongoDB, Git, API REST..."
+                    />
+                  </AIFormField>
                   <p className="text-xs text-gray-500 mt-1">
                     Séparez les compétences par des virgules
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Langues requises
-                  </label>
-                  <input
+                  <AIFormField
+                    label="Langues requises"
                     name="languages"
-                    value={form.languages}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="Français (natif), Anglais (courant)..."
-                  />
+                    onFocus={() => setActiveField("languages")}
+                    onBlur={() => setActiveField(null)}
+                    onAIAssist={handleAIAssist}
+                    isAIAssistantActive={activeField === "languages"}
+                  >
+                    <input
+                      name="languages"
+                      value={form.languages}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      placeholder="Français (natif), Anglais (courant)..."
+                    />
+                  </AIFormField>
                   <p className="text-xs text-gray-500 mt-1">
                     Spécifiez le niveau si nécessaire
                   </p>
@@ -694,16 +736,22 @@ const CreateJob = () => {
               </h3>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tags de recherche
-                </label>
-                <input
+                <AIFormField
+                  label="Tags de recherche"
                   name="tags"
-                  value={form.tags}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  placeholder="urgent, remote, startup, fintech, junior-friendly..."
-                />
+                  onFocus={() => setActiveField("tags")}
+                  onBlur={() => setActiveField(null)}
+                  onAIAssist={handleAIAssist}
+                  isAIAssistantActive={activeField === "tags"}
+                >
+                  <input
+                    name="tags"
+                    value={form.tags}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    placeholder="urgent, remote, startup, fintech, junior-friendly..."
+                  />
+                </AIFormField>
                 <p className="text-xs text-gray-500 mt-1">
                   Ajoutez des mots-clés pour améliorer la visibilité
                 </p>
@@ -1048,6 +1096,14 @@ const CreateJob = () => {
           </div>
         </div>
       </div>
+      <AIChatAssistant
+        jobFormContext={form}
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)} // onClose ferme explicitement
+        onToggle={toggleChat} // onToggle est pour le bouton flottant
+        initialPrompt={initialPrompt}
+        setInitialPrompt={setInitialPrompt} // On passe la fonction pour la réinitialiser
+      />
     </div>
   );
 };

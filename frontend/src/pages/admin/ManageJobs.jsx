@@ -50,8 +50,8 @@ const STATUS_BADGES = {
   // Fallback si statut inconnu
   default: {
     color: "bg-gray-100 text-gray-800",
-    icon: BriefcaseIcon,
-    label: "Inconnu",
+    icon: ClockIcon,
+    label: "En cours",
   },
 };
 
